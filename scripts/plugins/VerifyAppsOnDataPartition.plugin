@@ -1,0 +1,279 @@
+echo
+echo "=================================================================================="
+echo " Application verifier plugin - by StenaviN (xda-developers.com)"
+echo "=================================================================================="
+echo
+echo "=================================================================================="
+echo " If application resides on DATA partition"
+echo " and contains native libraries (*.so files in lib\ folder),"
+echo " it will not work properly after you flash your ROM."
+echo
+echo " This plugin will check your apps on DATA partition..."
+echo "=================================================================================="
+echo
+
+PRESS_ENTER_SCRIPT=`pwd`"/scripts/./press_enter"
+AAPT_DEFAULT_LOCATION=`pwd`"/tools/aapt"
+
+"$PRESS_ENTER_SCRIPT"
+
+#
+# Find working folder
+#
+
+WORKING_DIR=""
+if [ -d WORKING_* ]
+then
+	cd WORKING_*
+	echo " Working folder: `pwd`"
+	WORKING_DIR=`pwd`
+else
+	echo " No working folder found!"
+	exit 1
+fi
+
+echo
+echo " Verifying your applications. Please, wait..."
+echo
+
+COUNTER=0
+APP_LIST=""
+
+echo -n " "
+for i in $( ls data/app/*\.apk )
+do
+	find_cmd=`unzip -l $i | grep lib/armeabi.*/.*\.so`
+	
+	if [ "$find_cmd" != "" ]
+	then
+		echo -n "!"
+		
+		if [ $COUNTER == 0 ]
+		then
+			APP_LIST="\t$i"
+		else
+			APP_LIST="$APP_LIST\n\t$i"
+		fi
+
+		let COUNTER+=1
+	else
+		echo -n "."
+	fi 
+done
+
+echo
+echo
+
+if [ $COUNTER == 0 ]
+then
+	echo " There are no applications which contain native libraries"
+else
+	if [ $COUNTER == 1 ]
+	then
+		echo " There is one application, which contains native libraries:"
+	else
+		echo " There are $COUNTER applications, which contain native libraries:"
+	fi
+	
+	echo -e "$APP_LIST"
+fi
+
+if [ $COUNTER != 0 ]
+then
+	PROCESSOR_V5="armeabi"
+	PROCESSOR_V7="armeabi-v7a"
+	PROCESSOR=""
+	
+	while :
+	do
+		echo 
+		echo "=================================================================================="
+		echo " Select your processor architecture."
+		echo " You can check it, using Android System Info application."
+		echo " This application available for free on the Market (com.electricsheep.asi.apk)."
+		echo " Select ARMv5, if you are in doubt."
+		echo "=================================================================================="
+		echo
+		echo "  1 - ARMv5"
+		echo "  2 - ARMv7"
+		echo
+		echo "  x - Exit"
+		echo ""
+		echo -n "Select processor architecture: "
+		read opt
+
+		case $opt in
+			1) PROCESSOR="$PROCESSOR_V5"; break;;
+			2) PROCESSOR="$PROCESSOR_V7"; break;;
+			x) exit 1;;
+			*) echo; echo " Invalid option"; "$PRESS_ENTER_SCRIPT";;
+		esac
+	done
+	
+	if [ "$PROCESSOR" != "" ]
+	then
+		AAPT_PATH=$AAPT_DEFAULT_LOCATION
+		while [ ! -x "$AAPT_PATH" ]
+		do
+			echo
+			echo "=================================================================================="
+			echo " In order to extract PACKAGE NAME from APK file, provide the path to aapt tool."
+			echo " (aapt tool is a part of Android SDK)."
+			echo "=================================================================================="
+			echo
+			echo -n "Path (x - Exit): "
+			
+			read AAPT_PATH
+			
+			if [ "$AAPT_PATH" == "x" ]
+			then
+				echo
+				echo " Operation is aborted."
+				echo
+				exit 1
+			fi
+			
+			if [ ! -f "$AAPT_PATH" ]
+			then
+				echo " Path not found!"
+				"$PRESS_ENTER_SCRIPT"
+			fi
+		done
+
+		echo
+		echo " Processing..."
+		echo
+		
+		DATE_STR=`date '+%m%d%y_%H%M%S'`
+		TEMP_DIR="/tmp/LIBS_$DATE_STR"
+		DATA_DIR="data/data"
+		TEMP_DATA_DIR="$TEMP_DIR/$DATA_DIR"
+		META_INF_DIR="$TEMP_DIR/META-INF/com/google/android"
+		
+		mkdir -p "$TEMP_DATA_DIR"
+		mkdir -p "$META_INF_DIR"
+		
+		# install_lib
+		echo "#!/sbin/sh" >> "$TEMP_DIR/install_lib"
+		echo "" >> "$TEMP_DIR/install_lib"
+
+		# Make \n as delimiter of application list
+		APP_LIST=$(echo "$APP_LIST" | sed -e 's/\\t/\n/g' | sed -e 's/\\n//g')
+		
+		for i in $APP_LIST
+		do
+			echo -e "\t$i"
+			
+			PACKAGE_NAME="`$AAPT_PATH dump badging $i | awk -F package\:\ name\=\' '{print $2}' | awk -F \' '{print $1}'`"
+			TEMP_LIB_DIR="$TEMP_DATA_DIR/$PACKAGE_NAME/lib"
+			LIB_DIR_IN_APK="$PROCESSOR"
+			
+			mkdir -p "$TEMP_LIB_DIR"
+			
+			#
+			# If there are no libraries for current processor architecture, let's use libraries for previous architecture
+			#
+			
+			find_cmd=`unzip -l $i | grep lib/$PROCESSOR/.*\.so`
+			if [ "$find_cmd" == "" ] && [ "$PROCESSOR" == "$PROCESSOR_V7" ]
+			then
+				LIB_DIR_IN_APK="$PROCESSOR_V5"
+			fi
+			
+			unzip -bjoq $i lib/$LIB_DIR_IN_APK/*.so -d $TEMP_LIB_DIR
+			
+			# update-script
+			echo "copy_dir PACKAGE:$DATA_DIR/$PACKAGE_NAME/lib DATA:data/$PACKAGE_NAME/lib" >> "$META_INF_DIR/update-script"
+			
+			# install_lib
+			echo "chmod 755 /$DATA_DIR/$PACKAGE_NAME/lib/*" >> "$TEMP_DIR/install_lib"
+			echo "chown 1000.1000 /$DATA_DIR/$PACKAGE_NAME/lib/*" >> "$TEMP_DIR/install_lib"
+			echo "" >> "$TEMP_DIR/install_lib"
+		done
+		
+		# update-script
+		echo "" >> "$META_INF_DIR/update-script"
+		echo "run_program PACKAGE:install_lib" >> "$META_INF_DIR/update-script"
+		
+		#
+		# Create update.zip
+		#
+		
+		echo
+		echo " Making update.zip..."
+		cd $TEMP_DIR
+		zip -r -y -q update.zip *
+		cd $WORKING_DIR
+		echo
+		echo " update.zip.zip created, ready for signing"
+		echo
+		
+		#
+		# Sign update.zip
+		#
+
+		DATE_STR=`date '+%m%d%y_%H%M%S'`
+		signed_file=signed_$DATE_STR.zip
+
+		echo " Signing update.zip as $signed_file..."
+
+		cp ../tools/signapk_files/testkey.* $TEMP_DIR
+		cp ../tools/signapk_files/signapk.jar $TEMP_DIR
+
+		cd $TEMP_DIR
+		java -jar signapk.jar testkey.x509.pem testkey.pk8 update.zip $signed_file
+		
+		rm -f testkey.*
+		rm -f signapk.jar
+		rm -f update.zip
+		cd $WORKING_DIR
+		
+		if [ -e $TEMP_DIR/$signed_file ] && [ "$?" == "0" ]
+		then
+
+			#
+			# Make output folder
+			#
+			
+			echo
+			
+			if [ ! -d $WORKING_DIR/../OUTPUT_ZIP ]
+			then
+				echo " Creating folder OUTPUT_ZIP ..."
+				mkdir ../OUTPUT_ZIP
+			fi
+
+			mv $TEMP_DIR/$signed_file $WORKING_DIR/../OUTPUT_ZIP/InstallLibs_$DATE_STR.zip
+
+			echo
+			echo
+			echo "=================================================================================="
+			echo
+			echo " Congratulations, your update ZIP is here:"
+			echo "     OUTPUT_ZIP/InstallLibs_$DATE_STR.zip" 
+			echo
+			echo " Copy this to your device and flash from recovery menu."
+			echo
+			echo "=================================================================================="
+			echo
+			echo "      - FLASH YOUR ROM"
+			echo "      - BOOT AND SETUP YOUR DEVICE"
+			echo "      - REBOOT INTO RECOVERY"
+			echo "      - FLASH InstallLibs_$DATE_STR.zip"
+			echo 
+			echo "=================================================================================="
+			echo
+
+		else 
+
+			echo
+			echo " Was not able to create $signed_file!"
+			echo
+
+		fi
+		
+		rm -fr $TEMP_DIR
+	fi
+fi
+
+cd $WORKING_DIR
