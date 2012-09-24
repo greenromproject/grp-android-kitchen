@@ -9,7 +9,11 @@ param2=HSMMC
 sys_mnt=\/dev\/block\/platform\/omap\/omap_hsmmc.0\/by-name\/system
 cache_mnt=\/dev\/block\/platform\/omap\/omap_hsmmc.0\/by-name\/cache
 boot_mnt=\/dev\/block\/platform\/omap\/omap_hsmmc.0\/by-name\/boot
+<<<<<<< HEAD
 data_mnt=???
+=======
+data_mnt=\/dev\/block\/platform\/omap\/omap_hsmmc.0\/by-name\/userdata
+>>>>>>> 59ec8fba48b6b30cd3cc53259a992757dd1e4974
 sdcard_mnt=???
 
 fix_boot3=yes
