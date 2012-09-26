@@ -1,0 +1,20 @@
+
+# Samsung Galaxy S3 (International Version)
+
+change_mnt=yes
+
+param1=ext4
+param2=EMMC
+
+param1_sdcard=vfat
+param2_sdcard=MTD
+
+efs_mnt=\/dev\/block\/mmcblk0p3
+boot_mnt=\/dev\/block\/mmcblk0p5
+recovery_mnt=\/dev\/block\/mmcblk0p6
+cache_mnt=\/dev\/block\/mmcblk0p8
+sys_mnt=\/dev\/block\/mmcblk0p9
+data_mnt=\/dev\/block\/mmcblk0p12
+preload_mnt=\/dev\/block\/mmcblk0p10
+sdcard_mnt=\/dev\/block\/mmcblk1p1
+

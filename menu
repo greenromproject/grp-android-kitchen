@@ -10,11 +10,7 @@
 #
 ############################################################################
 
-<<<<<<< HEAD
-version=0.201
-=======
 version=0.202
->>>>>>> 59ec8fba48b6b30cd3cc53259a992757dd1e4974
 
 
 if [ ! -e menu ]
@@ -72,6 +68,7 @@ do
   echo 
   echo "============================================================"
   echo " Android Kitchen $version - by dsixda (xda-developers.com)"
+  echo " Modified By The Team Members Of GreenRomProject"
   echo "============================================================"
   echo
   echo "  1 - Set up working folder from ROM"

@@ -1,142 +1,62 @@
-#!/system/bin/bash
+#!/system/xbin/busybox ash
 export bbcmd="/system/bin/busybox.a2sd"
 export a2sdlog="/data/dtinstall.log";
 
-$bbcmd echo "[ ] Darktremor Apps2SD Installation Program" > $a2sdlog;
-$bbcmd echo "[ ] Install Date: `/system/bin/busybox.a2sd date`" >> $a2sdlog;
-$bbcmd echo "" >> $a2sdlog;
-if [ -d /sd-ext ];
+$bbcmd echo "[ ] Darktremor Apps2SD Installation Program" > $a2sdlog
+$bbcmd echo "[ ] Install Date: `/system/bin/busybox.a2sd date`" >> $a2sdlog
+$bbcmd echo "" >> $a2sdlog
+$bbcmd echo "[ ] Performing cleanup for temp, beta and swap files" >> $a2sdlog
+$bbcmd rm -f /system/bin/*.new | $bbcmd tee -a $a2sdlog
+$bbcmd rm -f /system/bin/*.tmp | $bbcmd tee -a $a2sdlog
+$bbcmd rm -f /system/bin/*.sw* | $bbcmd tee -a $a2sdlog
+$bbcmd echo "[ ] Resetting Apps2SD Launcher" | $bbcmd tee -a $a2sdlog
+$bbcmd rm -f /system/etc/init.d/*a2sd* | $bbcmd tee -a $a2sdlog
+$bbcmd rm -f /system/etc/init.d/*apps2sd* | $bbcmd tee -a $a2sdlog
+$bbcmd rm -f /system/etc/init.d/*cache* | $bbcmd tee -a $a2sdlog
+$bbcmd rm -f /system/etc/init.d/*dalvik* | $bbcmd tee -a $a2sdlog
+$bbcmd rm -f /system/etc/init.d/*mount* | $bbcmd tee -a $a2sdlog
+$bbcmd rm -f /system/etc/init.d/*data2* | $bbcmd tee -a $a2sdlog
+$bbcmd echo "[ ] Restoring Launcher" | $bbcmd tee -a $a2sdlog
+launchcpy=0
+for (( x=1; x<40; x++ )); do
+  if [ $x -lt 10 ]; 
+    then
+      a2sdcmd="/system/etc/init.d/0${x}apps2sd"
+      $bbcmd echo "[ ] Checking for existence of 0${x}apps2sd..." >> $a2sdlog
+      launcher=`$bbcmd ls /system/etc/init.d/0${x}* | $bbcmd grep -e 0$x -q;echo $?`
+      if [ $launcher == 1 ];
+        then
+          $bbcmd echo "[ ] Slot found: 0${x}apps2sd" >> $a2sdlog
+          $bbcmd echo "[ ] Target: $a2sdcmd" >> $a2sdlog
+          $bbcmd mv -f /system/etc/init.d/dtapp $a2sdcmd | $bbcmd tee -a $a2sdlog
+          launchcpy=1
+          x=99
+        else
+          $bbcmd echo "[ ] Slot occupied: 0${x}apps2sd" >> $a2sdlog
+      fi;
+    else
+      a2sdcmd="/system/etc/init.d/${x}apps2sd"
+      xpm=$x
+      $bbcmd echo "[ ] Checking for existence of ${x}apps2sd..." >> $a2sdlog
+      launcher=`ls /system/etc/init.d/${x}* | /system/bin/busybox.a2sd grep -e $x -q;echo $?`
+      if [ $launcher == 1 ];
+        then
+          $bbcmd echo "[ ] Slot found: ${x}apps2sd" >> $a2sdlog
+          $bbcmd echo "[ ] Target: $a2sdcmd" >> $a2sdlog
+          $bbcmd mv -f /system/etc/init.d/dtapp $a2sdcmd | $bbcmd tee -a $a2sdlog
+          launchcpy=1
+          x=99
+        else
+          $bbcmd echo "[ ] Slot occupied: ${x}apps2sd" >> $a2sdlog
+      fi;
+  fi;
+done;
+if [ -e /data/.noa2sd ];
   then
-    $bbcmd echo "[ ] Creating temporary /sd-ext" | $bbcmd tee -a $a2sdlog;
-    $bbcmd mkdir /sd-ext | $bbcmd tee -a $a2sdlog;
-    $bbcmd chmod 777 /sd-ext | $bbcmd tee -a $a2sdlog;
-    $bbcmd /sd-ext/app | $bbcmd tee -a $a2sdlog;
-    $bbcmd /sd-ext/app-private | $bbcmd tee -a $a2sdlog;
-    $bbcmd /sd-ext/dalvik-cache | $bbcmd tee -a $a2sdlog;
-    $bbcmd chmod 777 /sd-ext/app | $bbcmd tee -a $a2sdlog;
-    $bbcmd chmod 777 /sd-ext/app-private | $bbcmd tee -a $a2sdlog;
-    $bbcmd chmod 777 /sd-ext/dalvik-cache | $bbcmd tee -a $a2sdlog;
-
+    echo "[ ] Removing No Apps2SD flag." >> $a2sdlog
+    /system/bin/busybox.a2sd rm /data/.noa2sd
 fi;
-$bbcmd echo "[ ] Attempting to mount SD card" | $bbcmd tee -a $a2sdlog;
-
-if [ -e /dev/block/mmcblk1p2 ];
+if [ -e /system/bin/adbfix ];
   then
-    export a2sddevmnt="/dev/block/mmcblk1p2";
-  else
-    if [ -e /dev/block/mmcblk0p2 ];
-      then
-        export a2sddevmnt="/dev/block/mmcblk0p2";
-      else
-        export a2sddevmnt="none";
-    fi;
+    /system/bin/busybox.a2sd chmod 777 /system/bin/adbfix
 fi;
-
-if [ $a2sddevmnt != "none" ];
-  then
-    $bbcmd mount -t auto -o rw $a2sddevmnt /system/sd | $bbcmd tee -a $a2sdlog;
-    if [ $? != 0 ];
-      then
-        $bbcmd echo "[X] Can't mount $a2sddevmnt." | $bbcmd tee -a $a2sdlog;
-        if [ -e /data/.dalvikcache ];
-          then
-            $bbcmd echo "[!] Resetting Dalvik Cache to Internal Storage" | $bbcmd tee -a $a2sdlog;
-            if [ -h /data/dalvik-cache ];
-              then
-                 $bbcmd rm -f /data/dalvik-cache | $bbcmd tee -a $a2sdlog;
-                 $bbcmd mkdir /data/dalvik-cache | $bbcmd tee -a $a2sdlog;
-                 $bbcmd chmod 777 /data/dalvik-cache | $bbcmd tee -a $a2sdlog;
-             fi;
-             $bbcmd rm -f /data/.dalvikcache | $bbcmd tee -a $a2sdlog;
-        fi;
-        if [ -h /data/app ];
-          then
-            $bbcmd echo "[!] Resetting Applications to Internal Storage" | $bbcmd tee -a $a2sdlog;
-            $bbcmd rm -f /data/app | $bbcmd tee -a $a2sdlog;
-            $bbcmd mkdir /data/app | $bbcmd tee -a $a2sdlog;
-            $bbcmd chmod 777 /data/app | $bbcmd tee -a $a2sdlog;
-        fi;
-        if [ -h /data/app-private ];
-          then
-            $bbcmd echo "[!] Resetting Private Apps to Internal Storage" | $bbcmd tee -a $a2sdlog;
-            $bbcmd rm -f /data/app-private | $bbcmd tee -a $a2sdlog;
-            $bbcmd mkdir /data/app-private | $bbcmd tee -a $a2sdlog;
-            $bbcmd chmod 777 /data/app-private | $bbcmd tee -a $a2sdlog;
-        fi;
-      else
-        $bbcmd echo "[ ] Mounting $a2sddevmnt successful." | $bbcmd tee -a $a2sdlog; 
-    fi;
-  else
-    if [ -e /data/.dalvikcache ];
-      then
-        $bbcmd echo "[!] Resetting Dalvik Cache to Internal Storage" | $bbcmd tee -a $a2sdlog;
-         if [ -h /data/dalvik-cache ];
-           then
-             $bbcmd rm -f /data/dalvik-cache | $bbcmd tee -a $a2sdlog;
-             $bbcmd mkdir /data/dalvik-cache | $bbcmd tee -a $a2sdlog;
-             $bbcmd chmod 777 /data/dalvik-cache | $bbcmd tee -a $a2sdlog;
-          fi;
-          $bbcmd rm -f /data/.dalvikcache | $bbcmd tee -a $a2sdlog;
-    fi;
-    if [ -h /data/app ];
-      then
-        $bbcmd echo "[!] Resetting Applications to Internal Storage" | $bbcmd tee -a $a2sdlog;
-        $bbcmd rm -f /data/app | $bbcmd tee -a $a2sdlog;
-        $bbcmd mkdir /data/app | $bbcmd tee -a $a2sdlog;
-        $bbcmd chmod 777 /data/app | $bbcmd tee -a $a2sdlog;
-    fi;
-    if [ -h /data/app-private ];
-      then
-        $bbcmd echo "[!] Resetting Private Apps to Internal Storage" | $bbcmd tee -a $a2sdlog;
-        $bbcmd rm -f /data/app-private | $bbcmd tee -a $a2sdlog;
-        $bbcmd mkdir /data/app-private | $bbcmd tee -a $a2sdlog;
-        $bbcmd chmod 777 /data/app-private | $bbcmd tee -a $a2sdlog;
-    fi; 
-fi; 
-    
-if [ ! -h /cache/dalvik-cache ];
-  then
-    $bbcmd echo "[ ] Installing CyanogenMod Dalvik Patch" | $bbcmd tee -a $a2sdlog;
-    if [ ! -d /cache/dc ];
-      then
-        $bbcmd echo "[ ] Creating /cache/dc" | $bbcmd tee -a $a2sdlog;
-        $bbcmd mkdir /cache/dc | $bbcmd tee -a $a2sdlog;
-        $bbcmd chmod 777 /cache/dc | $bbcmd tee -a $a2sdlog;
-    fi;
-    if [ -e /data/.dcpartition ];
-      then
-        $bbcmd echo "[ ] Moving contents of /cache/dalvik-cache" | $bbcmd tee -a $a2sdlog;
-        $bbcmd echo "    to /cache/dc" | $bbcmd tee -a $a2sdlog;
-        $bbcmd mv -f /cache/dalvik-cache/* /cache/dc | $bbcmd tee -a $a2sdlog;
-        $bbcmd echo "[ ] Relinking /data/dalvik-cache to /cache/dc" | $bbcmd tee -a $a2sdlog;
-        $bbcmd rm -f /data/dalvik-cache | $bbcmd tee -a $a2sdlog;
-        $bbcmd ln -s /cache/dc /data/dalvik-cache | $bbcmd tee -a $a2sdlog;
-    fi;
-    $bbcmd echo "[ ] Linking /cache/dalvik-cache to" | $bbcmd tee -a $a2sdlog;
-    $bbcmd echo "    /data/dalvik-cache" | $bbcmd tee -a $a2sdlog;
-    $bbcmd rm -f /cache/dalvik-cache | $bbcmd tee -a $a2sdlog;
-    $bbcmd ln -s /data/dalvik-cache /cache/dalvik-cache | $bbcmd tee -a $a2sdlog;
-fi;
-
-$bbcmd echo "[ ] Resetting Apps2SD Launcher" | $bbcmd tee -a $a2sdlog;
-$bbcmd rm -f /system/etc/init.d/*a2sd* | $bbcmd tee -a $a2sdlog;
-$bbcmd rm -f /system/etc/init.d/*apps2sd* | $bbcmd tee -a $a2sdlog;
-$bbcmd rm -f /system/etc/init.d/*cache* | $bbcmd tee -a $a2sdlog;
-$bbcmd rm -f /system/etc/init.d/*dalvik* | $bbcmd tee -a $a2sdlog;
-$bbcmd echo "[ ] Restoring Launcher" | $bbcmd tee -a $a2sdlog;
-export launchcpy=0;
-export launcher=`ls /system/etc/init.d/04*;echo $?`;
-if [ $launcher == 1 ];
-  then
-    $bbcmd cp -fp /system/bin/a2sd /system/etc/init.d/04apps2sd | $bbcmd tee -a $a2sdlog;
-    exit
-fi;
-export launcher=`ls /system/etc/init.d/10*;echo $?`;
-if [ $launcher == 1 ];
-  then
-    $bbcmd cp -fp /system/bin/a2sd /system/etc/init.d/10apps2sd | $bbcmd tee -a $a2sdlog;
-    exit;
-fi;
-$bbcmd cp -fp /system/bin/a2sd /system/etc/init.d/35apps2sd | $bbcmd tee -a $a2sdlog;
-exit;
-    

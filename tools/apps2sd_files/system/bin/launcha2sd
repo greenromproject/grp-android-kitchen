@@ -2,93 +2,31 @@
 
 # Darktremor Apps2SD Starter Routine version 2.7.5
 # By: Travis Kirton
-# Date: September 30, 2010
+# Date: January 24, 2011
 # All Apps2SD code originally based on Apps2SD written by Cyanogen
 # ZipAlign code based on ZipAlign script written by Wes Garner
+# Fix Permission Code by shade@chemlab.org...originally implemented for CyanogenMod by Cyanogen
+# Additional improvements to Fix Permission code by ankn, smeat, thenefield, farmatito, rikupw, Kastro
+# Additional thanks to the entire XDA community for their support and feedback.
+
+# Credits apply to the following files: a2sd, launcha2sd, starta2sd, checka2sd
 
 # Assign version information
 
 # This determines if busybox is installed.  If installed, it will use the installed one.
 # Debug setting...this is used to control testing.
+
+
 if [ -e /data/.dtdebug ];
   then
-    export dtdebug=1;
-    export mntpoint="/system/sd";
-    export gpcmd="/system/bin/toolbox getprop";
-    export spcmd="/system/bin/toolbox setprop";
+    export dtdebug=1
+    export mntpoint="/system/sd"
+    export gpcmd="/system/bin/toolbox getprop"
+    export spcmd="/system/bin/toolbox setprop"
   else
     export dtdebug=0;
 fi;
 
-if [ -e /system/xbin/busybox ];
-  then
-    if [ $dtdebug == 0 ];
-      then
-        export bbcmd="/system/xbin/busybox";
-    fi;
-  else
-    if [ $dtdebug == 0 ];
-      then
-        export bbcmd="/system/bin/busybox.a2sd";
-    fi;
-fi;
-export a2sdfirstboot=`ps | $bbcmd grep -e android.process.acore -q;echo -e $?`;
-export a2sdver="2.7.5.2"
-export a2sdverdate="2010-09-30"
-# Program variables needed for definition.
-export a2sdlf="/data/dta2sd.log";
-export a2sdsys="/data/dtsysdump.txt";
-export a2sdinit="/data/dtinitrc.txt";
-export a2sdfs=`$bbcmd grep -q -e /system/bin/sysinit /init.rc;echo -e $?;`;
-export tee="$bbcmd tee -a $a2sdlf";
-export a2sdblkdelay="3s";
-
-
-if [ -e /data/.smallheap ];
-  then
-    echo "#!/system/bin/bash" > /data/dalvikheap | $tee;
-    echo "# Darktremor Apps2SD Dalvik Heap Size Settings" >> /data/dalvikheap | $tee;
-    echo "# Created: `$bbcmd date`" >> /data/dalvikheap | $tee;
-    echo "echo '[ ] Setting Dalvik Heap Size to 16 MB'" >> /data/dalvikheap | $tee;
-    echo "$spcmd dalvik.vm.heapsize 16m" >> /data/dalvikheap | $tee;
-    $bbcmd chmod 777 /data/dalvikheap | $tee;
-    $bbcmd rm -f /data/.smallheap | $tee;
-fi;
-if [ -e /data/.largeheap ];
-  then
-    echo "#!/system/bin/bash" > /data/dalvikheap | $tee;
-    echo "# Darktremor Apps2SD Dalvik Heap Size Settings" >> /data/dalvikheap | $tee;
-    echo "# Created: `$bbcmd date`" >> /data/dalvikheap | $tee;
-    echo "echo '[ ] Setting Dalvik Heap Size to 24 MB'" >> /data/dalvikheap | $tee;
-    echo "$spcmd dalvik.vm.heapsize 24m" >> /data/dalvikheap | $tee;
-    $bbcmd chmod 777 /data/dalvikheap | $tee;
-    $bbcmd rm -f /data/.largeheap | $tee;
-fi;
-if [ -e /data/.jumboheap ];
-  then
-    echo "#!/system/bin/bash" > /data/dalvikheap | $tee;
-    echo "# Darktremor Apps2SD Dalvik Heap Size Settings" >> /data/dalvikheap | $tee;
-    echo "# Created: `$bbcmd date`" >> /data/dalvikheap | $tee;
-    echo "echo '[ ] Setting Dalvik Heap Size to 32 MB'" >> /data/dalvikheap | $tee;
-    echo "$spcmd dalvik.vm.heapsize 32m" >> /data/dalvikheap | $tee;
-    $bbcmd rm -f /data/.jumboheap | $tee;
-fi;
-
-# This determines if /sd-ext exists (CyanogenMod).  If exists, it uses the /sd-ext.
-if [ -d /sd-ext ];
-  then
-    if [ $dtdebug == 0 ];
-      then
-        export mntpoint="/sd-ext";
-    fi;
-  else
-    if [ $dtdebug == 0 ];
-      then
-        export mntpoint="/system/sd";
-    fi;
-fi;
-
-# This determines if toolbox is installed.  If it is, Darktremor uses it.
 if [ -e /system/bin/toolbox ];
   then
     if [ $dtdebug == 0 ];
@@ -104,17 +42,335 @@ if [ -e /system/bin/toolbox ];
     fi;
 fi;
 
-echo -e " __ _____" | $tee;
-echo -e "|  \  |  " | $tee;
-echo -e "|   | |  " | $tee;
-echo -e "|__/  |  Darktremor Apps2SD $a2sdver ($a2sdverdate)" | $tee;
-echo -e "" | $tee;
+if [ -e /system/xbin/busybox ];
+  then
+    msg1=" Using ROM Busybox."
+    msg2=" Using Darktremor Busybox." 
+    bbcmd="/system/xbin/busybox"
+    dtbbcmd="/system/bin/busybox.a2sd"
+    bbgrep=`$bbcmd --help | /system/bin/busybox.a2sd grep -e grep -q;/system/bin/busybox.a2sd echo $?`
+    if [ $bbgrep == 0 ];
+      then
+        echo "[ ] GREP: $msg1"
+        export bbgrep="$bbcmd grep"
+      else
+        echo "[!] GREP: $msg2"
+        export bbgrep="$dtbbcmd grep"
+    fi;
+    bbreboot=`$bbcmd --help | $bbgrep -e reboot -q;echo $?`
+    if [ $bbreboot == 0 ];
+      then
+        echo "[ ] REBOOT: $msg1"
+        export bbreboot="$bbcmd reboot -f"
+      else
+        echo "[!] REBOOT: $msg2"
+        export bbreboot="$dtbbcmd reboot -f"
+     fi;
+     bbfdisk=`$bbcmd --help | $bbgrep -e fdisk -q;echo $?`
+     if [ $bbfdisk == 0 ];
+       then
+         echo "[ ] FDISK: $msg1"
+         export bbfdisk="$bbcmd fdisk -l"
+       else
+         echo "[!] FDISK: $msg2"
+         export bbfisk="$dtbbcmd fdisk -l"
+    fi;
+    bbcat=`$bbcmd --help | $bbgrep -e cat -q;echo $?`
+    if [ $bbcat == 0 ];
+      then
+        echo "[ ] CAT: $msg1"
+        export bbcat="$bbcmd cat"
+      else
+        echo "[!] CAT: $msg2"
+        export bbcat="$dtbbcmd cat"
+    fi; 
+    bbps="toolbox ps"
+#   bbps=`$bbcmd --help | $bbgrep -e ps -q;echo $?`
+#   if [ $bbps == 0 ];
+#     then
+#       export bbps="$bbcmd ps"
+#     else
+#       export bbps="$dtbbcmd ps"
+#   fi;
+    bbmkdir=`$bbcmd --help | $bbgrep -e mkdir -q;echo $?`
+    if [ $bbmkdir == 0 ];
+      then
+        echo "[ ] MKDIR: $msg1"
+        export bbmkdir="$bbcmd mkdir"
+      else
+        echo "[!] MKDIR: $msg2"
+        export bbmkdir="$dtbbcmd mkdir"
+    fi;
+    bbrmdir=`$bbcmd --help | $bbgrep -e rmdir -q;echo $?`
+    if [ $bbrmdir == 0 ];
+      then
+        echo "[ ] RMDIR: $msg1"
+        export bbrmdir="$bbcmd rmdir"
+      else
+        echo "[!] RMDIR: $msg2"
+        export bbrmdir="$dtbbcmd rmdir"
+    fi;
+    bbchmod=`$bbcmd --help | $bbgrep -e chmod -q;echo $?`
+    if [ $bbchmod == 0 ];
+      then
+        echo "[ ] CHMOD: $msg1"
+        export bbchmod="$bbcmd chmod 777"
+      else
+        echo "[!] CHMOD: $msg2"
+        export bbchmod="$dtbbcmd chmod 777"
+    fi;
+    bbmount=`$bbcmd --help | $bbgrep -e mount -q;echo $?`
+    if [ $bbmount == 0 ];
+      then
+        echo "[ ] MOUNT: $msg1"
+        export bbmount="$bbcmd mount"
+      else
+        echo "[!] MOUNT: $msg2"
+        export bbmount="$dtbbcmd mount"
+    fi;
+    bbumount=`$bbcmd --help | $bbgrep -e umount -q;echo $?`
+    if [ $bbumount == 0 ];
+      then
+        echo "[ ] UMOUNT: $msg1"
+        export bbumount="$bbcmd umount"
+      else
+        echo "[!] UMOUNT: $msg2"
+        export bbumount="$dtbbcmd umount"
+    fi;
+    bbcp=`$bbcmd --help | $bbgrep -e cp -q;echo $?`
+    if [ $bbcp == 0 ];
+      then
+        echo "[ ] CP: $msg1"
+        export bbcp="$bbcmd cp"
+      else
+        echo "[!] CP: $msg2"
+        export bbcp="$dtbbcmd cp"
+    fi;
+    bbrm=`$bbcmd --help | $bbgrep -e rm -q;echo $?`
+    if [ $bbrm == 0 ];
+      then
+        echo "[ ] RM: $msg1"
+        export bbrm="$bbcmd rm"
+      else
+        echo "[!] RM: $msg2"
+        export bbrm="$dtbbcmd rm"
+    fi;
+    bbmv=`$bbcmd --help | $bbgrep -e mv -q;echo $?`
+    if [ $bbmv == 0 ];
+      then
+        echo "[ ] MV: $msg1"
+        export bbmv="$bbcmd mv"
+      else
+        echo "[!] MV: $msg2"
+        export bbmv="$dtbbcmd mv"
+    fi;
+    bbln=`$bbcmd --help | $bbgrep -e ln -q;echo $?`
+    if [ $bbln == 0 ];
+      then
+        echo "[ ] LN: $msg1"
+        export bbln="$bbcmd ln -s"
+      else
+        echo "[!] LN: $msg2"
+        export bbln="$dtbbcmd ln -s"
+    fi;
+    bbmore=`$bbcmd --help | $bbgrep -e more -q;echo $?`
+    if [ $bbmore == 0 ];
+      then
+        echo "[ ] MORE: $msg1"
+        export bbmore="$bbcmd more"
+      else
+        echo "[!] MORE: $msg2" | $tee
+        export bbmore="$dtbbcmd more"
+    fi;
+    bbmknod=`$bbcmd --help | $bbgrep -e mknod -q;echo $?`
+    if [ $bbmknod == 0 ];
+      then
+        echo "[ ] MKNOD: $msg1"
+        export bbmknod="$bbcmd mknod"
+      else
+        echo "[!] MKNOD: $msg2"
+        export bbmknod="$dtbbcmd mknod"
+    fi;
+    bbawk=`$bbcmd --help | $bbgrep -e awk -q;echo $?`
+    if [ $bbawk == 0 ];
+      then
+        echo "[ ] AWK: $msg1"
+        export bbawk="$bbcmd awk"
+      else
+        echo "[!] AWK: $msg2"
+        export bbawk="$dtbbcmd awk"
+    fi;
+    bbsleep=`$bbcmd --help | $bbgrep -e sleep -q;echo $?`
+    if [ $bbsleep == 0 ];
+      then
+        echo "[ ] SLEEP: $msg1"
+        export bbsleep="$bbcmd sleep"
+      else
+        echo "[!] SLEEP: $msg2"
+        export bbsleep="$dtbbcmd sleep"
+    fi;
+    bbsync=`$bbcmd --help | $bbgrep -e sync -q;echo $?`
+    if [ $bbsync == 0 ];
+      then
+        echo "[ ] SYNC: $msg1"
+        export bbsync="$bbcmd sync"
+      else
+        echo "[!] SYNC: $msg2"
+        export bbysync="$dtbbcmd sync"
+    fi;
+    bbtee=`$bbcmd --help | $bbgrep -e tee -q;echo $?`
+    if [ $bbtee == 0 ];
+      then
+        echo "[ ] TEE: $msg1"
+        export bbtee="$bbcmd tee -a"
+      else
+        echo "[!] TEE: $msg2"
+        export bbtee="$dtbbcmd tee -a"
+    fi;
+  else
+    echo "[ ] All Commands: Darktremor Busybox" | $tee
+    export bbcmd="/system/bin/busybox.a2sd"
+    export bbgrep="$bbcmd grep"
+    export bbfdisk="$bbcmd fdisk -l"
+    export bbreboot="$bbcmd reboot -f"
+    export bbcat="$bbcmd cat"
+#   export bbps="$bbcmd ps"
+    export bbps="toolbox ps"   
+    export bbmkdir="$bbcmd mkdir"
+    export bbrmdir="$bbcmd rmdir"
+    export bbchmod="$bbcmd chmod 777"
+    export bbmount="$bbcmd mount"
+    export bbumount="$bbcmd umount"
+    export bbcp="$bbcmd cp"
+    export bbrm="$bbcmd rm"
+    export bbmv="$bbcmd mv"
+    export bbln="$bbcmd ln -s"
+    export bbmore="$bbcmd more"
+    export bbmknod="$bbcmd mknod"
+    export bbawk="$bbcmd awk"
+    export bbsleep="$bbcmd sleep"
+    export bbsync="$bbcmd sync"
+    export bbtee="$bbcmd tee -a"
+fi;
 
+if [ -e /data/.dtbusybox ];
+  then
+    echo "[ ] All Commands: Darktremor Busybox" | $tee
+    export bbcmd="/system/bin/busybox.a2sd"
+    export bbgrep="$bbcmd grep"
+    export bbfdisk="$bbcmd fdisk -l"
+    export bbreboot="$bbcmd reboot -f"
+    export bbcat="$bbcmd cat"
+#   export bbps="$bbcmd ps"   
+    export bbps="toolbox ps"
+    export bbmkdir="$bbcmd mkdir"
+    export bbrmdir="$bbcmd rmdir"
+    export bbchmod="$bbcmd chmod 777"
+    export bbmount="$bbcmd mount"
+    export bbumount="$bbcmd umount"
+    export bbcp="$bbcmd cp"
+    export bbrm="$bbcmd rm"
+    export bbmv="$bbcmd mv"
+    export bbln="$bbcmd ln -s"
+    export bbmore="$bbcmd more"
+    export bbmknod="$bbcmd mknod"
+    export bbawk="$bbcmd awk"
+    export bbsleep="$bbcmd sleep"
+    export bbsync="$bbcmd sync"
+    export bbtee="$bbcmd tee -a"
+fi;
+
+export a2sdfirstboot=`$bbps | $bbgrep -e android.process.acore -q;echo -e $?`;
+export a2sdver="2.7.5.3 Beta 4a"
+export a2sdverdate="2011-01-30"
+# Program variables needed for definition.
+export a2sdlf="/data/dta2sd.log"
+export a2sdsys="/data/dtsysdump.txt"
+export a2sdinit="/data/dtinitrc.txt"
+export a2sdfs=`$bbgrep -q -e /system/bin/sysinit /init.rc;echo -e $?;`
+export tee="$bbtee $a2sdlf"
+export a2sdblkdelay="3s";
+export a2sdshell="/system/bin/bash"
+sdfixthreshold=128
+$spcmd a2sd.repair.reboot 0
+echo "#!/system/bin/sh" > /data/.lmdefault
+echo "echo \"`$bbcat /sys/module/lowmemorykiller/parameters/minfree`\" \> /sys/module/lowmemorykiller/parameters/minfree" >> /data/.lmdefault 
+
+echo -e " __ _____" | $tee
+echo -e "|  \  |  " | $tee
+echo -e "|   | |  " | $tee
+echo -e "|__/  |  Darktremor Apps2SD $a2sdver ($a2sdverdate)" | $tee
+echo -e "" | $tee
+
+if [ $# != 0 ];
+  then
+    if [ $1 == "firstboot" ];
+      then
+        export a2sdfirstboot=1
+    fi;
+fi;
+
+echo "[-] Checkpoint 1: Check for SD Card Fix and Implement." | $tee
+
+if [ $a2sdfirstboot == 1 ];
+  then
+    if [ -e /sys/devices/virtual/bdi/179:0/read_ahead_kb ];
+      then
+        sdfix=`$bbcat /sys/devices/virtual/bdi/179:0/read_ahead_kb`
+        if [ $sdfix -lt $sdfixthreshold ];
+          then
+            echo -e "[ ] Read Ahead Buffer is: `$bbcat /sys/devices/virtual/bdi/179:0/read_ahead_kb`" | $tee
+            echo -e "[ ] Threshold is: $sdfixthreshold" | $tee
+            echo -e "[ ] Applying SD Read Ahead Fix..." | $tee
+            echo $sdfixthreshold > /sys/devices/virtual/bdi/179:0/read_ahead_kb
+            echo -e "[ ] Sent Read Ahead Buffer change." | $tee
+            echo -e "[ ] Read Ahead Buffer now reads: `$bbcat /sys/devices/virtual/bdi/179:0/read_ahead_kb`" | $tee
+          else
+            echo -e "[!] Read Ahead Buffer is greater than threshold." | $tee
+            echo -e "    Threshold is: $sdfixthreshold" | $tee
+            echo -e "    Current setting is: `$bbcat /sys/devices/virtual/bdi/179:0/read_ahead_kb`" | $tee
+            echo -e "[!] No changes will be made." | $tee
+        fi;
+    fi;
+fi;
+
+echo "[-] Checkpoint 2:  Run Dalvik Heap Program (if exists)." | $tee
+if [ -e /data/dalvikheap ];
+  then
+    echo -e "[ ] Running Dalvik Heap program..." | $tee
+    $a2sdshell /data/dalvikheap
+fi;
+
+echo "[-] Checkpoint 3: Run Set Low Memory Killer Program (if exists)." | $tee
+if [ -e /data/dtset_lowmem ];             
+  then
+    echo -e "[ ] Running Set Low Memory Killer program..." | $tee
+    $a2sdshell /data/dtset_lowmem
+fi;
+
+echo "[-] Checkpoint 4: Determine Mount Point." | $tee
+# This determines if /sd-ext exists (CyanogenMod).  If exists, it uses the /sd-ext.
+if [ -d /sd-ext ];
+  then
+    if [ $dtdebug == 0 ];
+      then
+        export mntpoint="/sd-ext";
+    fi;
+  else
+    if [ $dtdebug == 0 ];
+      then
+        export mntpoint="/system/sd";
+    fi;
+fi;
+
+# This determines if toolbox is installed.  If it is, Darktremor uses it.
+
+echo "[-] Checkpoint 5: Set Parameter Variables." | $tee
 if [ $a2sdfirstboot == 1 ];
   then
     echo -e "[ ] Startup Boot Sequence";
 fi;
-echo -e "[ ] Using Busybox located at: $bbcmd" >> $a2sdlf;
+echo -e "[ ] Using Busybox located at: $bbcmd" >> $a2sdlf
 
 echo -e "[ ] GetProp Command = $gpcmd";
 echo -e "[ ] SetProp Command = $spcmd";
@@ -124,19 +380,7 @@ if [ $dtdebug == 1 ];
     echo -e "[!] DEBUG MODE ACTIVE.";
 fi;
 
-if [ $a2sdfirstboot == 1 ];
-  then
-    echo -e "[ ] Checking for existence of Dalvik Heap Change Program." | $tee;
-    if [ -e /data/dalvikheap ];
-      then
-        echo -e "[ ] Dalvik Heap Change Program Found." | $tee;
-        echo -e "[ ] Running Set Dalvik Heap Program" | $tee;
-        /system/bin/bash /data/dalvikheap;
-      else
-        echo -e "[!] Dalvik Heap Change Program Not Found." | $tee;
-   fi;
-fi;
-
+echo "[-] Checkpoint 6: Insert CyanogenMod patch." | $tee
 # CyanogenMod patch
 # This is a patch that redirects /cache/dalvik-cache to
 # /data/dalvik-cache.  Dalvik Cache storage on the /cache
@@ -145,32 +389,36 @@ if [ ! -h /cache/dalvik-cache ];
   then
     if [ ! -d /cache/dc ];
       then
-        echo -e "[ ] Creating /cache/dc" | $tee;
-        $bbcmd mkdir /cache/dc | $tee;
-        $bbcmd chmod 777 /cache/dc | $tee;
+        echo -e "[ ] Creating /cache/dc" | $tee
+        $bbmkdir /cache/dc | $tee
+        $bbchmod /cache/dc | $tee
      fi;
      echo -e "[ ] Symlinking /cache/dalvik-cache to /data/dalvik-cache";
-     $bbcmd rm -rf /cache/dalvik-cache | $tee;
-     $bbcmd ln -s /data/dalvik-cache /cache/dalvik-cache | $tee;
+     $bbrm -rf /cache/dalvik-cache | $tee
+     $bbln /data/dalvik-cache /cache/dalvik-cache | $tee
 fi;
+
+echo "[-] Checkpoint 7: Complete Dalvik Cache Move (if applicable)." | $tee
 
 # If Move Dalvik flag is set...complete the dalvik-cache move.
 if [ $a2sdfirstboot == 1 ];
   then
     if [ -e /data/.mvdalvik ];
       then
-        echo -e "[ ] Moving Temporary Dalvik contents to Dalvik-Cache" | $tee;
-        $bbcmd rm -f /data/dalvik-cache | $tee;
-        $bbcmd mkdir /data/dalvik-cache | $tee;
-        $bbcmd chmod 777 /data/dalvik-cache | $tee;
-        $bbcmd mv -f /data/dctmp/* /data/dalvik-cache | $tee;
-        echo -e "[ ] Remove Move Dalvik Flag" | $tee;
-        $bbcmd rm -f /data/.mvdalvik | $tee;
-        echo -e "[ ] Rebooting phone" | $tee;
-        /system/bin/busybox.a2sd reboot -f | $tee;
+        echo -e "[ ] Moving Temporary Dalvik contents to Dalvik-Cache" | $tee
+        $bbrm -f /data/dalvik-cache | $tee
+        $bbmkdir /data/dalvik-cache | $tee
+        $bbchmod /data/dalvik-cache | $tee
+        $bbmv -f /data/dctmp/* /data/dalvik-cache | $tee
+        echo -e "[ ] Remove Move Dalvik Flag" | $tee
+        $bbrm -f /data/.mvdalvik | $tee
+        echo -e "[ ] Rebooting phone" | $tee
+        $bbsync | $tee
+        $bbreboot | $tee
     fi;
 fi;
 
+echo "[-] Checkpoint 8: Resetting Dalvik Cache Partition" | $tee
 # Sets the dalvik-cache storage for the cache partition to /cache/dc.  This
 # is for the CyanogenMod patch.
 export dcpath="/cache/dc";
@@ -182,15 +430,16 @@ if [ $a2sdfirstboot == 1 ];
       then
         if [ -h /data/dalvik-cache ];
           then
-            echo -e "[ ] Resetting /data/dalvik-cache" | $tee;
-            $bbcmd rm -rf /data/dalvik-cache | $tee;
-            $bbcmd mkdir /data/dalvik-cache | $tee;
-            $bbcmd chmod 777 /data/dalvik-cache | $tee;
+            echo -e "[ ] Resetting /data/dalvik-cache" | $tee
+            $bbrm -rf /data/dalvik-cache | $tee
+            $bbmkdir /data/dalvik-cache | $tee
+            $bbchmod /data/dalvik-cache | $tee
         fi;
     fi;
 fi;
 
 
+echo "[-] Checkpoint 9: Switching Davlik Cache to Cache Partition (if applicable)" | $tee
 # Looks for the Dalvik to Cache flag and mounts Dalvik-cache on /cache
 # partition on /data/dalvik-cache.
 
@@ -200,37 +449,37 @@ if [ $a2sdfirstboot == 1 ];
       then
         if [ -h /data/dalvik-cache ]
           then
-            echo -e "[ ] Resetting /data/dalvik-cache" | $tee;
-            $bbcmd rm -rf /data/dalvik-cache | $tee;
-            $bbcmd mkdir /data/dalvik-cache | $tee;
-            $bbcmd chmod 777 /data/dalvik-cache | $tee;
-            echo -e "[ ] Mounting /data/dalvik-cache" | $tee;
-            $bbcmd mount -o bind $dcpath /data/dalvik-cache;
-            $bbcmd cat /proc/mounts | $bbcmd grep -q -e /data/dalvik-cache
+            echo -e "[ ] Resetting /data/dalvik-cache" | $tee
+            $bbrm -rf /data/dalvik-cache | $tee
+            $bbmkdir /data/dalvik-cache | $tee
+            $bbchmod /data/dalvik-cache | $tee
+            echo -e "[ ] Mounting /data/dalvik-cache" | $tee
+            $bbmount -o bind $dcpath /data/dalvik-cache;
+            $bbcat /proc/mounts | $bbgrep -q -e /data/dalvik-cache
             if [ $? != 0 ];
               then
-                echo -e "[X] Mounting Dalvik-Cache to /cache partition failed." | $tee;
-                echo -e "[ ] Setting Symbolic Link." | $tee;
-                $bbcmd rm -rf /data/dalvik-cache | $tee;
-                $bbcmd ln -s /cache/dc /data/dalvik-cache | $tee;
+                echo -e "[X] Mounting Dalvik-Cache to /cache partition failed." | $tee
+                echo -e "[ ] Setting Symbolic Link." | $tee
+                $bbrm -rf /data/dalvik-cache | $tee
+                $bbln /cache/dc /data/dalvik-cache | $tee
                 export a2sdcmnt=1;
               else
-                echo -e "[ ] Mounting Dalvik-Cache to /cache partition successful." | $tee;
+                echo -e "[ ] Mounting Dalvik-Cache to /cache partition successful." | $tee
                 export a2sdcmnt=0;
             fi;
           else
-            echo -e "[ ] Mounting /data/dalvik-cache" | $tee;
-            $bbcmd mount -o bind $dcpath /data/dalvik-cache;
-            $bbcmd cat /proc/mounts | $bbcmd grep -q -e /data/dalvik-cache
+            echo -e "[ ] Mounting /data/dalvik-cache" | $tee
+            $bbmount -o bind $dcpath /data/dalvik-cache;
+            $bbcat /proc/mounts | $bbgrep -q -e /data/dalvik-cache
             if [ $? != 0 ];
               then
-                echo -e "[X] Mounting Dalvik-Cache to /cache partition failed." | $tee;
-                echo -e "[ ] Setting Symbolic Link." | $tee;
-                $bbcmd rm -rf /data/dalvik-cache | $tee;
-                $bbcmd ln -s /cache/dc /data/dalvik-cache | $tee;
+                echo -e "[X] Mounting Dalvik-Cache to /cache partition failed." | $tee
+                echo -e "[ ] Setting Symbolic Link." | $tee
+                $bbrm -rf /data/dalvik-cache | $tee
+                $bbln /cache/dc /data/dalvik-cache | $tee
                 export a2sdcmnt=1;
               else
-                echo -e "[ ] Mounting Dalvik-Cache to /cache partition successful." | $tee;
+                echo -e "[ ] Mounting Dalvik-Cache to /cache partition successful." | $tee
                 export a2sdcmnt=0;    
             fi;
         fi;
@@ -238,714 +487,480 @@ if [ $a2sdfirstboot == 1 ];
         export a2sdcmnt=1;
     fi;
   else
-    export a2sdcmnt=`$bbcmd grep -q -e /data/dalvik-cache /proc/mounts;echo $?;`;
+    export a2sdcmnt=`$bbgrep -q -e /data/dalvik-cache /proc/mounts;echo -e $?;`;
 fi;
-
-          
 
 # This checks to see if any parameters were used.  No parameters should only
 # be used during the boot sequence.  If no parameters are used, the undocumented
 # boot parameter will be used.  This will probably go away in 2.7.6
+echo "[-] Checkpoint 10: Checking for existence of command parameter" | $tee
 if [ $# == 0 ];
   then
     export a2sdparm="boot";
   else
-    export a2sdparm=$1;
+    if [ $1 == "firstboot" ];
+      then
+        export a2sdparm="boot"
+      else
+        export a2sdparm=$1;
+    fi;
 fi;
 
+echo "[-] Checkpoint 11: Check for a2sd help command" | $tee
 # If a2sd help was called, immediately display the help file, then exits.
 if [ $a2sdparm == "help" ];
   then
-    echo -e "[ ] Help command called.  Displaying help file: apps2sd.hlp" >> $a2sdlf;
+    echo -e "[ ] Help command called.  Displaying help file: apps2sd.hlp" >> $a2sdlf
     echo -e "Darktremor Apps2SD Help";
     echo -e "Version $a2sdver ($a2sdverdate)";
-    echo -e "=================================================" | $tee;
-    $bbcmd more /system/bin/apps2sd.hlp;
-    echo -e "[ ] Ending program: launcha2sd" >> $a2sdlf;
+    echo -e "=================================================" | $tee
+    $bbmore /system/bin/apps2sd.hlp;
+    echo -e "[ ] Ending program: launcha2sd" >> $a2sdlf
     exit;
 fi;
 
+echo "[-] Checkpoint 12: Check for a2sd check command" | $tee
 # If a2sd check was called, immediately launch the chka2sd program, then exit.
 # This keeps the sd card from mounting (if it failed to mount on boot) or remounting
 # (this eliminating a remount error).
 if [ $a2sdparm == "check" ];
   then
-    echo -e "[ ] Attempting to execute: chka2sd" >> $a2sdlf;
+    echo -e "[ ] Attempting to execute: chka2sd" >> $a2sdlf
     echo -e "[ ] Starting Apps2SD Check Program.";
-    /system/bin/bash /system/bin/chka2sd;
-    echo -e "[ ] Returned to file:  launcha2sd" >> $a2sdlf;
-    echo -e "[ ] Ending program: launcha2sd" >> $a2sdlf;
+    $a2sdshell /system/bin/chka2sd;
+    echo -e "[ ] Returned to file:  launcha2sd" >> $a2sdlf
+    echo -e "[ ] Ending program: launcha2sd" >> $a2sdlf
     exit;
 fi;
 
+echo "[-] Checkpoint 13: Display version information." | $tee
 # Version information...the first line is a bit redundant (look earlier in the code).
-echo -e "[ ] Displaying version information:  $a2sdver" >> $a2sdlf;
+echo -e "[ ] Displaying version information:  $a2sdver" >> $a2sdlf
 echo -e "[ ] Starting Darktremor Apps2SD Version $a2sdver";
 
-# Looking for the device /dev/block/mmcblk0p2.  Corrects an issue with the Desire phones.
-# Desires do not check all their devices at the start before launching commands.  This causes a
-# failure in Apps2SD where the phone locked up.  This fixes that issue by creating the block
-# device /dev/block/mmcblk0p2 if it doesn't exists.
+# Checking to see if the kernel has support for EXT partitions
 
-export a2sdblkdev=0;
-
-if [ -e /dev/block/mmcblk1p2 ];
-  then
-    export a2sdblkdev=1;
-  else
-    if [ -e /dev/block/mmcblk0p2 ];
-      then
-        export a2sdblkdev=1;
-    fi;
-fi;
+echo "[-] Checkpoint 14: Check for filesystem support." | $tee
+ext2part=`$bbcat /proc/filesystems | $bbgrep -q -e ext2;echo -e $?`
+$spcmd a2sd.ext2 $ext2part
+ext3part=`$bbcat /proc/filesystems | $bbgrep -q -e ext3;echo -e $?`
+$spcmd a2sd.ext3 $ext3part
+ext4part=`$bbcat /proc/filesystems | $bbgrep -q -e ext4;echo -e $?`
+$spcmd a2sd.ext4 $ext4part
+extsum=$[ext2part+ext3part+ext4part]
 
 if [ $a2sdfirstboot == 1 ];
   then
-    if [ $a2sdblkdev == 0 ];
+    echo -e "[ ] Listing /proc/filesystems" | $tee
+    $bbcat /proc/filesystems | $tee
+    if [ $extsum == 3 ];
       then
-        echo -e "[ ] Attempting to mount SD card to $mntpoint" | $tee;
-        echo -e "[ ] Directory Listing: /dev/block" >> $a2sdlf;
-        $bbcmd ls -l /dev/block/* >> $a2sdlf;
-        echo -e "[ ] Partition Listing:" >> $a2sdlf;
-        $bbcmd cat /proc/mounts >> $a2sdlf;
-        echo -e "[ ] Waiting $a2sdblkdelay seconds to see if /dev/block/mmcblk0p2 shows up." | $tee
-        $bbcmd sleep $a2sdblkdelay;
-        echo -e "[ ] Checking for ext partition";
-        if [ ! -e /dev/block/mmcblk0p2 ];
-          then
-            echo -e "[!] Creating /dev/block/mmcblk0p2.";
-            echo -e "[X] Block device not found: /dev/block/mmcblk0p2" >> $a2sdlf;
-            echo -e "    Unsure if this is due to a problem with a kernel not finding" >> $a2sdlf;
-            echo -e "    the ext partition or not loading the devices correctly." >> $a2sdlf;
-            echo -e "[ ] Creating block device /dev/block/mmcblk0p2" >> $a2sdlf;
-            $bbcmd mknod /dev/block/mmcblk0p2 b 179 2;
-            if [ $? == 0 ];
-              then
-                export a2sdblkdev=1;
-            fi;
-            echo -e "[ ] Generating directory listing of /dev/block:" >> $a2sdlf;
-            $bbcmd ls -l /dev/block >> $a2sdlf;
-          else
-            export a2sdblkdev=1;
-        fi;
+        echo -e "[X] Kernel does not support any EXT partitions." | $tee
+        echo -e "    Apps2SD will not be able to mount the SD card." | $tee
+        $spcmd a2sd.mountpoint "none"
+        $a2sdshell /system/bin/starta2sd bootprotect
+        echo -e "[ ] Ending program." | $tee
+        exit;
     fi;
+fi;
 
-# Mounting ext partition and boot protection code.  In CyanogenMod, this code here may cause a 
-# runaway condition between Apps2SD and DalvikVM.  If that happens, pull the battery and restart
-# the phone.  This will be worked on a bit more extensively in 2.7.6.
-    if [ $a2sdblkdev == 1 ];
-      then
-        if [ -e /dev/block/mmcblk1p2 ];
+echo "[-] Checkpoint 15: Mount partition." | $tee
+# Searches for partition to mount and mount, if possible.
+if [ $a2sdfirstboot == 1 ];
+  then
+    export a2sdmnt=1
+    for (( y=0; y<3; y++ )); do
+      if [ ! -e /dev/block/mmcblk0 ];
+        then
+          $bbmknod /dev/block/mmcblk0 b 179 0
+          $bbmknod /dev/block/mmcblk0p1 b 179 1
+          $bbmknod /dev/block/mmcblk0p2 b 179 2
+          $bbmknod /dev/block/mmcblk0p3 b 179 3
+      fi;
+      echo -e "[ ] Directory Listing of /dev/block" | $tee
+      $bbcmd ls -l /dev/block/* | $tee
+      for (( x=0; x<10; x++ )); do
+        if [ -e /dev/block/mmcblk$x ];
           then
-            export a2sdmount=`$bbcmd grep -q -e /dev/block/mmcblk1p2 /proc/mounts;echo -e $?;`;
-          else
-            export a2sdmount=`$bbcmd grep -q -e /dev/block/mmcblk0p2 /proc/mounts;echo -e $?;`;
-        fi;
-        if [ $a2sdmount == 1 ];    
-          then
-#           echo -e "[ ] Checking Ext partition..." | $tee;
-#           /system/bin/e2fsck -p /dev/block/mmcblk0p2 | $tee;
-#           $spcmd cm.e2fsck.errors $?;
-#           echo -e "[ ] e2fsck returned code: `$gpcmd cm.e2fsck.errors;`" >> $a2sdlf;
-            echo -e "[ ] Mounting ext partitions" | $tee;
-            if [ -e /dev/block/mmcblk1p2 ];
+            echo -e "[ ] Listing of partitions on /dev/block/mmcblk$x" | $tee
+            $bbfdisk /dev/block/mmcblk$x | $tee
+            export a2sdblk=`$bbfdisk /dev/block/mmcblk$x | $bbawk '/^\// && $5 == 83 {print $1;exit;}'`
+            if [ ! $a2sdblk ];
               then
-                $bbcmd mount -o noatime,nodiratime -t auto /dev/block/mmcblk1p2 $mntpoint | $tee;
+                echo -e "[X] No ext partitions found on /dev/block/mmcblk$x." | $tee
               else
-                $bbcmd mount -o noatime,nodiratime -t auto /dev/block/mmcblk0p2 $mntpoint | $tee;
-            fi;
-            echo -e "[ ] Mount returned code: $?" >> $a2sdlf;
-            $bbcmd cat /proc/mounts | $bbcmd grep -q -e $mntpoint
-            if [ $? != 0 ];
-              then
-                echo -e "[X] Mounting failed." >> $a2sdlf;
-                echo -e "[X] Mounting ext partition failed.";
-#               echo -e "[X] Can't continue script...aborting.";
-                echo -e "[!] Activating Boot Protection." >> $a2sdlf;
-                if [ -h /data/dalvik-cache ] && [ ! -e /data/.dcpartition ];
+                echo -e "[ ] EXT partition found at $a2sdblk." | $tee
+                echo -e "[ ] Checking volume $a2sdblk." | $tee
+                if [ -e /data/.convertext3 ];
                   then
-                    echo -e "[!] Resetting Dalvik Cache back to Internal Storage." | $tee;
-                    echo -e "[ ] Remove Symbolic Link: /data/dalvik-cache" >> $a2sdlf;
-                    $bbcmd rm -f /data/dalvik-cache;
-                    echo -e "[ ] Create Directory: /data/dalvik-cache" >> $a2sdlf;
-                    $bbcmd mkdir /data/dalvik-cache;
-                    echo -e "[ ] Set Permission: /data/dalvik-cache (777)" >> $a2sdlf;
-                    $bbcmd chmod 777 /data/dalvik-cache;
-                    echo -e "[ ] Directory List: /data" >> $a2sdlf;
-                    $bbcmd ls -l /data >> $a2sdlf;
-                    echo -e "[ ] Delete file: /data/.dalvikcache" >> $a2sdlf;
-                    $bbcmd rm -f /data/.dalvikcache;
+                    echo "x" > /data/.forcecheck
                 fi;
-                if [ -h /data/app ];
+                if [ -e /data/.convertext4 ];
                   then
-                    echo -e "[!] Resetting Applications back to Internal Storage." | $tee;
-                    echo -e "[ ] Remove Symbolic Link: /data/app" >> $a2sdlf;
-                    $bbcmd rm -f /data/app;
-                    echo -e "[ ] Create Directory: /data/app" >> $a2sdlf;
-                    $bbcmd mkdir /data/app;
-                    echo -e "[ ] Set Permission: /data/app (777)" >> $a2sdlf;
-                    $bbcmd chmod 777 /data/app;
-                    echo -e "[ ] Directory List: /data" >> $a2sdlf;
-                    $bbcmd ls -l /data >> $a2sdlf
+                    echo "x" > /data/.forcecheck
                 fi;
-                echo -e "[ ] Creating No Apps2SD Flag File" >> $a2sdlf;
-                echo -e "x" > /data/.noa2sd;
-                if [ -h /data/app-private ];
+                if [ -e /data/.forcecheck ];
                   then
-                    echo -e "[!] Resetting Private Applications back to Internal Storage." | $tee;
-                    echo -e "[ ] Remove Symbolic Link: /data/app-private" >> $a2sdlf;
-                    $bbcmd rm -f /data/app-private;
-                    echo -e "[ ] Create Directory: /data/app-private" >> $a2sdlf;
-                    $bbcmd mkdir /data/app-private;
-                    echo -e "[ ] Set Permission: /data/app-private (777" >> $a2sdlf;
-                    $bbcmd chmod 777 /data/app-private;
-                    echo -e "[ ] Directory List: /data";
-                    $bbcmd ls -l /data >> $a2sdlf;
+                    echo -e "[!] Force check initiated." | $tee
+                    /system/bin/e2fsck -yvf $a2sdblk
+                    $bbrm /data/.forcecheck
+                  else
+                    /system/bin/e2fsck -yv $a2sdblk
                 fi;
-                export a2sdmnt=1;
-#               echo -e "[ ] Setting File System Ready property to 1." | $tee;
-#               $spcmd cm.filesystem.ready 1;
-#               $spcmd dc.filesystem.ready 1;
-#               echo -e "[ ] cm.filesystem.ready = `$gpcmd cm.filesystem.ready;`" >> $a2sdlf;
-#               echo -e "[ ] dc.filesystem.ready = `$gpcmd cm.filesystem.ready;`" >> $a2sdlf;
-#               echo -e "[ ] Ending Program: launcha2sd" >> $a2sdlf;
-#               exit;
+                if [ -e /data/.convertext3 ];
+                  then
+                    echo "[ ] Converting $a2sdblk to EXT3..." | $tee
+                    /system/bin/tune2fs -j $a2sdblk | $tee
+                    echo "[ ] Performing Force Check..." | $tee
+                    /system/bin/e2fsck -yvf $a2sdblk
+                    echo "[ ] Removing Conversion Flag File..." | $tee
+                    $bbrm /data/.convertext3
+                fi;
+                if [ -e /data/.convertext4 ];
+                  then
+                    echo "[ ] Converting $a2sdblk to EXT4..." | $tee
+                    /system/bin/tune2fs -O extents,uninit_bg,dir_index $a2sdblk | $tee
+                    echo "[ ] Performing Force Check..." | $tee
+                    /system/bin/e2fsck -yvf $a2sdblk
+                    echo "[ ] Removing Conversion Flag File..." | $tee
+                    $bbrm /data/.convertext4
+                fi;
+                mountstatus=0
+                if [ $mountstatus == 0 ];
+                  then
+                    echo -e "[ ] Attempting to mount $a2sdblk." | $tee
+                    $bbmount -o noatime,nodiratime -t auto $a2sdblk $mntpoint | $tee
+                    echo -e "[ ] Mount returned code: $?" | $tee
+                    chkmount=`$bbcat /proc/mounts|$bbcmd grep -q -e $mntpoint;echo $?`
+                    if [ $chkmount == 0 ];
+                      then
+                        echo -e "[ ] Mounting $a2sdblk successful." | $tee
+                        mountstatus=1
+                      else
+                        echo -e "[X] Mounting $a2sdblk FAILED.." | $tee
+                    fi;
+                fi;
+                if [ $mountstatus == 1 ];
+                  then
+                    echo -e "[ ] Mount successful: $a2sdblk" | $tee
+                    $spcmd a2sd.mountpoint $a2sdblk | $tee
+                    echo -e "[ ] Checking for directory structure." | $tee
+                    if [ ! -e $mntpoint/app ];
+                      then
+                        echo -e "[ ] Creating $mntpoint/app" | $tee
+                        $bbmkdir $mntpoint/app | $tee
+                        $bbchmod $mntpoint/app | $tee
+                    fi;
+                    if [ ! -e $mntpoint/app-private ];
+                      then
+                        echo -e "[ ] Creating $mntpoint/app-private" | $tee
+                        $bbmkdir $mntpoint/app-private | $tee
+                        $bbchmod $mntpoint/app-private | $tee
+                    fi;
+                    if [ ! -e $mntpoint/dalvik-cache ];
+                      then
+                        echo -e "[ ] Creating $mntpont/dalvik-cache" | $tee
+                        $bbmkdir $mntpoint/dalvik-cache | $tee
+                        $bbchmod $mntpoint/dalvik-cache | $tee
+                     fi;
+                     if [ ! -e $mntpoint/data ];
+                       then
+                         echo -e "[ ] Creating $mntpoint/data" | $tee
+                         $bbmkdir $mntpoint/data | $tee
+                         $bbchmod $mntpoint/data | $tee
+                     fi;
+                     x=99
+                     y=99
+                     echo "[ ] Structure Check complete." | $tee
+                     export a2sdmnt=0
+                   else
+                     echo -e "[X] Mount $a2sdblk unsuccessful." | $tee
+                     if [ $x -lt 9 ];
+                       then
+                         echo -e "[ ] Continuing search for EXT partition." | $tee
+                     fi;
+                 fi;
+             fi;
              else
-                echo -e "[ ] Ext partition successfully mounted." >> $a2sdlf;
-                echo -e "[ ] Partition Listing:" >> $a2sdlf;
-                $bbcmd cat /proc/mounts >> $a2sdlf;
-	        echo -e "[*] Ext partition mounted.";
-                export a2sdmnt=0;
+               echo -e "[!] No block device /dev/block/mmcblk$x" | $tee
+               if [ $x -lt 9 ];
+                 then
+                   echo -e "[ ] Continuing search for EXT partition." | $tee
+                   $bbsleep 1s
+               fi;
             fi;
-          else
-            echo -e "[ ] Ext partition is already mounted." >> $a2sdlf;
-            echo -e "[ ] Partition Listing:" >> $a2sdlf;
-            $bbcmd cat /proc/mounts >> $a2sdlf;
-            echo -e "[*] Ext partition found and already mounted.";
-            export a2sdmnt=0;
-        fi;
-      else
-        echo -e "[X] Partition Listing: " >> $a2sdlf;
-        $bbcmd cat /proc/mounts >> $a2sdlf;
-        echo -e "[X] Block Device not found: /dev/block/mmcblk0p2 or /dev/block/mmcblk" >> $a2sdlf;
-        echo -e "[X] No ext partition or partition not at";
-        echo -e "    /dev/block/mmcblk0p2 or /dev/block mmcblk1p2.";
-        echo -e "";
-        echo -e "    An ext2, ext3, or ext4 partition must";
-        echo -e "    exists on /dev/block/mmcblk0p2.";
-        echo -e "";
-        echo -e "    Reboot phone into recovery and create";
-        echo -e "    an ext2, ext3, or ext4 partition."; 
-        echo -e "[!] Activating Boot Protection." >> $a2sdlf;
-        if [ -h /data/dalvik-cache ];
-          then
-            if [ ! -e /data/.dcpartition ];
-              then
-                echo -e "[!] Resetting Dalvik Cache back to Internal Storage." | $tee;
-                echo -e "[ ] Remove Symbolic Link: /data/dalvik-cache" >> $a2sdlf;
-                $bbcmd rm -f /data/dalvik-cache;
-                echo -e "[ ] Create Directory: /data/dalvik-cache" >> $a2sdlf;
-                $bbcmd mkdir /data/dalvik-cache;
-                echo -e "[ ] Set Permission: /data/dalvik-cache (777)" >> $a2sdlf;
-                $bbcmd chmod 777 /data/dalvik-cache;
-                echo -e "[ ] Directory List: /data" >> $a2sdlf;
-                $bbcmd ls -l /data >> $a2sdlf;
-                echo -e "[ ] Delete file: /data/.dalvikcache" >> $a2sdlf;
-                $bbcmd rm -f /data/.dalvikcache;
-            fi;
-        fi;
-        if [ -h /data/app ];
-          then
-            echo -e "[!] Resetting Applications back to Internal Storage." | $tee;
-            echo -e "[ ] Remove Symbolic Link: /data/app" >> $a2sdlf;
-            $bbcmd rm -f /data/app;
-            echo -e "[ ] Create Directory: /data/app" >> $a2sdlf;
-            $bbcmd mkdir /data/app;
-            echo -e "[ ] Set Permission: /data/app (777)" >> $a2sdlf;
-            $bbcmd chmod 777 /data/app;
-            echo -e "[ ] Directory List: /data" >> $a2sdlf;
-            $bbcmd ls -l /data >> $a2sdlf
-        fi;
-        echo -e "[ ] Creating No Apps2SD Flag File" >> $a2sdlf;
-        echo -e "x" > /data/.noa2sd;
-        if [ -h /data/app-private ];
-          then
-            echo -e "[!] Resetting Private Applications back to Internal Storage." | $tee;
-            echo -e "[ ] Remove Symbolic Link: /data/app-private" >> $a2sdlf;
-            $bbcmd rm -f /data/app-private;
-            echo -e "[ ] Create Directory: /data/app-private" >> $a2sdlf;
-            $bbcmd mkdir /data/app-private;
-            echo -e "[ ] Set Permission: /data/app-private (777" >> $a2sdlf;
-            $bbcmd chmod 777 /data/app-private;
-            echo -e "[ ] Directory List: /data";
-            $bbcmd ls -l /data >> $a2sdlf;
-        fi;
-        export a2asdmnt=1;
-#        echo -e "[ ] Setting File System Ready property to 1." | $tee;
-#        $spcmd cm.filesystem.ready 1;
-#        $spcmd dc.filesystem.ready 1;
-#        echo -e "[ ] cm.filesystem.ready = `$gpcmd cm.filesystem.ready;`" >> $a2sdlf;
-#        echo -e "[ ] dc.filesystem.ready = `$gpcmd cm.filesystem.ready;`" >> $a2sdlf;
-#        echo -e "[ ] Ending Program: boota2sd" >> $a2sdlf;
-#        exit;
-    fi;
+          done;
+          if [ $a2sdmnt != 0 ];
+            then
+              echo -e "[X] Could not find a block device." | $tee
+              if [ $y -lt 2 ];
+                then
+                  echo -e "    Attempting another pass to see if any" | $tee
+                  echo -e "    block devices may have came online since" | $tee
+                  echo -e "    the last scan." | $tee
+                  $bbsleep 5s
+                else
+                  echo -e "[X] No block devices are mountable." | $tee
+                  $spcmd a2sd.mountpoint "none"
+                  $spcmd a2sd.repair.reboot 1
+                  $a2sdshell /system/bin/starta2sd bootprotect
+                  echo -e "[ ] Setting Filesystem Ready flags." | $tee
+                  $spcmd cm.filesystem.ready 1
+                  $spcmd dc.filesystem.ready 1
+                  $spcmd oxygen.filesystem.ready 1
+                  echo -e "    Contact Travis Kirton (rtkirton@gmail.com) for assistance." | $tee
+                  exit;
+              fi;
+          fi;
+    done; 
 fi;
 
-# Realigning Dalvik Cache (only for Dalvik to SD).
+echo "[-] Checkpoint 16: Reset Dalvik if Flag File is present." | $tee
 if [ $a2sdfirstboot == 1 ];
   then
-    if [ $a2sdmnt == 0 ];
+    if [ -e /data/.resetcache ];
       then
-        if [ -h /data/dalvik-cache ];
-          then
-            if [ -e /data/.dalvikcache ];
-              then
-                echo -e "[ ] Realigning /data/dalvik-cache to $mntpoint/dalvik-cache" | $bbcmd tee -a $a2sdlog;
-                $bbcmd rm -f /data/dalvik-cache;
-                $bbcmd ln -s $mntpoint/dalvik-cache /data/dalvik-cache;
-                $bbcmd chmod 777 /data/dalvik-cache;
-            fi;
-        fi;
+        $bbrm -f /data/.resetcache | $tee
+        echo "[ ] Resetting Cache..." | $tee
+        $bbrm -f /data/dalvik-cache/* | $tee
+        echo "[ ] Restarting Phone..." | $tee
+        $bbreboot
     fi;
-fi;
+fi;  
 
+#echo "[-] Checkpoint 16: Realigning Dalvik Cache for Dalvik2SD." | $tee
+# Realigning Dalvik Cache (only for Dalvik to SD).
+#if [ $a2sdfirstboot == 1 ];
+#  then
+#    if [ -h /data/dalvik-cache ];
+#      then
+#        if [ -e /data/.dalvikcache ];
+#          then
+#            echo -e "[ ] Realigning /data/dalvik-cache to $mntpoint/dalvik-cache" | $bbcmd tee -a $a2sdlog;
+#            $bbrm -f /data/dalvik-cache;
+#            $bbln $mntpoint/dalvik-cache /data/dalvik-cache;
+#            $bbchmod /data/dalvik-cache;
+#        fi;
+#    fi;
+#fi;
 
+echo "[-] Checkpoint 17: Mount Swap." | $tee
 # This activates swap if the following conditions are true
 # 1. /data/.noswap does not exists
 # 2. system_server isn't running (which is isn't during the first part of the boot sequence).
 if [ $a2sdfirstboot == 1 ];
   then
-    if [ ! -e /data/.noswap ];
+    if [ -e /proc/swaps ];
       then
-        if [ -e /dev/block/mmcblk1p3 ];
+        if [ ! -e /data/.noswap ];
           then
-            export a2sdswappart="/dev/block/mmcblk1p3";
-          else
-            if [ -e /dev/block/mmcblk0p3 ];
-              then
-                export a2sdswappart="/dev/block/mmcblk0p3";
-              else
-                export a2sdswappart="none";
-            fi
-        fi;
-        if [ $a2sdswappart != "none" ];
-          then
-            echo -e "[ ] Swap block device found: $a2sdswappart" | $tee;
-            echo -e "[ ] Swap Partition Found...Turning on swap." | $tee;
-            $bbcmd mkswap $a2sdswappart | $tee;
-            echo -e "[ ] Make Swap command returned code: $?" | $tee;
-            export a2sdswapret=`$bbcmd swapon $a2sdswappart;echo $?;`;
-            if [ $a2sdswapret == 0 ];
-              then
-                if [ -e /data/dtswap ];
-                  then
-                    echo -e "[ ] Executing Swappiness Program" | $tee;
-                    /system/bin/bash /data/dtswap;
-                fi;
-                echo -e "[ ] Swap On command returned code: $a2sdswapret" | $tee;
-                echo -e "[ ] Setting swap variables to 1" | $tee;
-                $spcmd a2sd.swap 1;
-                $spcmd a2sd.swappart $a2sdswappart;
-                export a2sdswap=1;
-              else
-                echo -e "[X] Problem activating swap.  Return code: $a2sdswapret" | $tee;
-                echo -e "[ ] Setting swap variables to 0" | $tee;
-                $spcmd a2sd.swap 0;
-                $spcmd a2sd.swappart "none";
-                export a2sdswap=0;
-            fi;       
-          else
-            echo -e "[X] Swap block device not found" | $tee;
-            echo -e "[X] Swap not active." | $tee;
-#            echo -e "[X] Swap Partition not found.";
-            echo -e "[ ] Setting swap variables to 0" | $tee;
-            $spcmd a2sd.swap 0;
-            $spcmd a2sd.swappart "none";
             export a2sdswap=0;
+            $spcmd a2sd.swap 0
+            $spcmd a2sd.swappart "none"
+            for (( x=0; x<10; x++ )); do
+              if [ -e /dev/block/mmcblk$x ];
+                then
+                  export a2sdswap=`$bbfdisk /dev/block/mmcblk$x | $bbawk '/^\// && $5 == 82 {print $1;exit;}'`
+                  if [ ! $a2sdswap ];
+                    then
+                      echo -e "[X] No swap partitions found on /dev/block/mmcblk$x" | $tee
+                    else
+                      echo -e "[ ] Swap partition found at $a2sdswap." | $tee
+                      echo -e "[ ] Activating Swap: $a2sdswap." | $tee
+                      export a2sdswapret=`$bbcmd swapon $a2sdswap;echo $?;`;
+                      if [ $a2sdswapret == 0 ];
+                        then
+                          if [ -e /data/dtswap ];
+                            then
+                              echo -e "[ ] Executing Swappiness Program" | $tee
+                              $a2sdshell /data/dtswap;
+                          fi;
+                          echo -e "[ ] Swap On command returned code: $a2sdswapret" | $tee
+                          echo -e "[ ] Setting swap variables to 1" | $tee
+                          $spcmd a2sd.swap 1
+                          $spcmd a2sd.swappart $a2sdswap
+                          export a2sdswap=1
+                          x=10
+                        else
+                          echo -e "[X] Swap On command failed: $a2sdswapret" | $tee
+                      fi;
+                  fi;
+              fi;       
+            done;
+          else
+            echo -e "[!] No swap flag file present. Swap will not be activated." | $tee
         fi;
       else
-        echo -e "[X] No Swap flag file found." | $tee;
-        echo -e "[X] Swap file will not be mounted." | $tee;
-#        echo -e "[!] No Swap flag file found.";
-#        echo -e "[!] Swap will not be turned on.";
-        echo 
-        $spcmd a2sd.swap 0;
-        $spcmd a2sd.swappart "none";
-        export a2sdswap=0;
+        echo -e "[X] Swap support does not exists.  Swap will not be mounted." | $tee
     fi;
 fi;
 
-#echo -e "[?] a2sd.swap = `$gpcmd a2sd.swap`" | $tee;
-#echo -e "[?] a2sd.swappart = `$gpcmd a2sd.swappart`" | $tee;
-#echo -e "[?] a2sdswap = $a2sdswap" | $tee;
-
-# Low Memory Killer checks and implementations.
-
-if [ $a2sdfirstboot == 1 ];
-  then
-    if [ -e /data/.lmmoderate ];
-      then
-        echo -e "[ ] Detected .lmmoderate flag file" >> $a2sdlf;
-        echo -e "[ ] Setting Low Memory Killer to 1536,3072,4096,7680,8960,10240" >> $a2sdlf;
-        echo -e "[ ] Setting Internal Memkiller to Moderate:";
-        echo -e "    Foreground App:     1536"
-        echo -e "    Visible App:        3072"
-        echo -e "    Secondary Server:   4096"
-        echo -e "    Hidden App:         7680"
-        echo -e "    Content Provider:   8960"
-        echo -e "    Empty App:         10240"
-        echo -e "1536,3072,4096,7680,8960,10240" > /sys/module/lowmemorykiller/parameters/minfree
-        echo -e "[ ] Low Memory Killer Settings: `$bbcmd cat /sys/module/lowmemorykiller/parameters/minfree;`" >> $a2sdlf;
-    fi;
-    if [ -e /data/.lmoptimum ];
-      then
-        echo -e "[ ] Detected .lmoptimum flag file" >> $a2sdlf;
-        echo -e "[ ] Setting Low Memory Killer to 1536,2048,4096,10240,12800,15360" >> $a2sdlf;
-        echo -e "[ ] Setting Internal Memkiller to Optimum:";
-        echo -e "    Foreground App:     1536"
-        echo -e "    Visible App:        2048"
-        echo -e "    Secondary Server:   4096"
-        echo -e "    Hidden App:        10240"
-        echo -e "    Content Provider:  12800"
-        echo -e "    Empty App:         15360"
-        echo -e "1536,2048,4096,10240,12800,15360" > /sys/module/lowmemorykiller/parameters/minfree
-        echo -e "[ ] Low Memory Killer Settings: `$bbcmd cat /sys/module/lowmemorykiller/parameters/minfree;`" >> $a2sdlf;
-    fi;
-    if [ -e /data/.lmstrict ];
-      then
-        echo -e "[ ] Detected .lmstrict flag file" >> $a2sdlf;
-        echo -e "[ ] Setting Low Memory Killer to 1536,2048,4096,15360,17920,20480" >> $a2sdlf;
-        echo -e "[ ] Setting Internal Memkiller to Strict:";
-        echo -e "    Foreground App:     1536"
-        echo -e "    Visible App:        2048"
-        echo -e "    Secondary Server:   4096"
-        echo -e "    Hidden App:        15360"
-        echo -e "    Content Provider:  17920"
-        echo -e "    Empty App:         20480"
-        echo -e "1536,2048,4096,15360,17920,20480" > /sys/module/lowmemorykiller/parameters/minfree
-        echo -e "[ ] Low Memory Killer Settings: `$bbcmd cat /sys/module/lowmemorykiller/parameters/minfree;`" >> $a2sdlf;
-    fi;
-    if [ -e /data/.lmaggressive ];
-      then
-        echo -e "[ ] Detected .lmaggressive flag file" >> $a2sdlf;
-        echo -e "[ ] Setting Low Memory Killer to 1536,3072,4096,21000,23000,25000" >> $a2sdlf;
-        echo -e "[ ] Setting Internal Memkiller to Aggressive:";
-        echo -e "    Foreground App:     1536"
-        echo -e "    Visible App:        3072"
-        echo -e "    Secondary Server:   4096"
-        echo -e "    Hidden App:        21000"
-        echo -e "    Content Provider:  23000"
-        echo -e "    Empty App:         25000"
-        echo -e "1536,3072,4096,21000,23000,25000" > /sys/module/lowmemorykiller/parameters/minfree
-        echo -e "[ ] Low Memory Killer Settings: `$bbcmd cat /sys/module/lowmemorykiller/parameters/minfree;`" >> $a2sdlf;
-    fi;
-    if [ -e /data/.lmextreme ];
-      then
-        echo -e "[ ] Detected .lmextreme flag file" >> $a2sdlf;
-        echo -e "[ ] Setting Low Memory Killer to 1536,3072,4096,38400,40960,43520" >> $a2sdlf;
-        echo -e "[ ] Setting Internal Memkiller to Extreme:";
-        echo -e "    Foreground App:     1536"
-        echo -e "    Visible App:        3072"
-        echo -e "    Secondary Server:   4096"
-        echo -e "    Hidden App:        38400"
-        echo -e "    Content Provider:  40960"
-        echo -e "    Empty App:         43520"
-        echo -e "1536,3072,4096,38400,40960,43520" > /sys/module/lowmemorykiller/parameters/minfree
-        echo -e "[ ] Low Memory Killer Settings: `$bbcmd cat /sys/module/lowmemorykiller/parameters/minfree;`" >> $a2sdlf;
-    fi;
-    if [ -e /data/.lmultimate ];
-      then
-        echo -e "[ ] Detected .lmultimate flag file" >> $a2sdlf;
-        echo -e "[ ] Setting Low Memory Killer to 1536,3072,4096,51200,57600,64000" >> $a2sdlf;
-        echo -e "[ ] Setting Internal Memkiller to Ultimate:";
-        echo -e "    Foreground App:     1536"
-        echo -e "    Visible App:        3072"
-        echo -e "    Secondary Server:   4096"
-        echo -e "    Hidden App:        51200"
-        echo -e "    Content Provider:  57600"
-        echo -e "    Empty App:         64000"
-        echo -e "1536,3072,4096,51200,57600,64000" > /sys/module/lowmemorykiller/parameters/minfree
-        echo -e "[ ] Low Memory Killer Settings: `$bbcmd cat /sys/module/lowmemorykiller/parameters/minfree;`" >> $a2sdlf;
-    fi;  
-
+echo "[-] Checkpoint 18: Display Heap Size." | $tee
 # Displays the dalvik heap size setting (or blank if one doesn't exists).
-    echo -e "[ ] Heap Size set to: `$gpcmd dalvik.vm.heapsize`";
-fi;
+echo -e "[ ] Heap Size set to: `$gpcmd dalvik.vm.heapsize`"
 
+echo "[-] Checkpoint 19: Check for start parameter and launch start2sd if needed." | $tee
 # This code checks to see if a parameter was used.  If not, it checks to see if first boot is still active.  If not,
 # it gives a warning message and exits the program...otherwise, the parameter used starts up starta2sd program.
 if [ $a2sdparm == "boot" ];
   then
     if [ $a2sdfirstboot == 0 ];
       then
-        echo -e "[X] Command line launch without parameters." >> $a2sdlf;
+        echo -e "[X] Command line launch without parameters." >> $a2sdlf
         echo -e "[X] No command specified.";
         echo -e "    You must specify a command if you are launching";
         echo -e "    from the command line.";
         echo -e "";
-        $bbcmd more /system/bin/apps2sd.hlp;
-        echo -e "[ ] Ending program: launcha2sd" >> $a2sdlf;
+        $bbmore /system/bin/apps2sd.hlp;
+        echo -e "[ ] Ending program: launcha2sd" >> $a2sdlf
         exit;
     fi;
   else 
-    echo -e "[ ] Launching Apps2SD Start Program with $a2sdparm" | $tee;
-    echo -e "[ ] Attempting to launch program: starta2sd" >> $a2sdlf;
-    /system/bin/bash /system/bin/starta2sd $a2sdparm;
-    echo -e "[ ] Ending program: launcha2sd" >> $a2sdlf;
+    echo -e "[ ] Launching Apps2SD Start Program with $a2sdparm" | $tee
+    echo -e "[ ] Attempting to launch program: starta2sd" >> $a2sdlf
+    $a2sdshell /system/bin/starta2sd $a2sdparm
+    echo -e "[ ] Ending program: launcha2sd" >> $a2sdlf
     exit;
 fi;
 
+export repair=0
 
-# Realigning /data/app in case of an issue (prevents running a2sd repair.)
-if [ -h /data/app ] && [ -d $mntpoint/app ];
+echo "[-] Checkpoint 20: Check for Dalvik Cache alignment." | $tee
+if [ -e /data/.dalvikcache ];
   then
-    if [ ! -e /data/.noa2sd ];
+    if [ ! -h /data/dalvik-cache ];
       then
-        echo -e "[ ] Realigning /data/app to $mntpoint/app" | $bbcmd tee -a $a2sdlog;
-        $bbcmd rm -f /data/app;
-        $bbcmd ln -s $mntpoint/app /data/app;
-#       $bbcmd chmod 777 /data/app;
+        echo -e "[X] Dalvik-cache is NOT symbolically linked." | $tee
+        echo -e "    Dalvik2SD flag file set." | $tee
+        $spcmd a2sd.repair.reboot 1
+        export repair=1
     fi;
-fi;
-
-# Realigning /data/app-private in case of error.
-if [ -h /data/app-private ] && [ -d $mntpoint/app-private ];
-  then
-    if [ ! -e /data/.noa2ad ];
-      then
-        echo -e "[ ] Realigning /data/app-private to $mntpoint/app-private" | $bbcmd tee -a $a2sdlog;
-        $bbcmd rm -f /data/app-private;
-        $bbcmd ln -s $mntpoint/app-private /data/app-private;
-#       $bbcmd chmod 777 /data/app-private;
-     fi;
-fi;
-
-
-# Checks for previous version (2.7 version) flag files and moves them to their appropriate space.
-if [ -e $mntpoint/.nocache ];
-  then
-    echo -e "[ ] Detected old No Cache flag.  Deprecated and will be removed." >> $a2sdlf;
-    echo -e "[!] No Cache flag detected.  Removing for compatibility.";
-    rm -f $mntpoint/.nocache;
-fi;
-
-echo -e "[ ] Checking for previous version flag files..." | $tee;
-if [ -e $mntpoint/.noa2sd ];
-  then
-    echo -e "[ ] Detected old No Apps2SD flag file.  Moving to /data" >> $a2sdlf;
-    echo -e "[!] Moving No Apps2SD Flag File...";
-    $bbcmd cp -f $mntpoint/.noa2sd /data/.noa2sd;
-    $bbcmd rm -f $mntpoint/.noa2sd;
-fi;
-if [ -e $mntpoint/.dalvikcache ];
-  then
-    echo -e "[ ] Detected old Dalvik to SD flag file.  Moving to /data" >> $a2sdlf;
-    echo -e "[!] Moving Dalvik Cache on SD Flag File...";
-    $bbcmd cp -f $mntpoint/.dalvikcache /data/.dalvikcache;
-    $bbcmd rm -f $mntpoint/.dalvikcache;
-fi;
-if [ -e $mntpoint/.dcpartition ];
-  then
-    echo -e "[ ] Detected old Dalvik to Cache flag file.  Moving to /data" >> $a2sdlf;
-    echo -e "[!] Moving Dalvik Cache on Cache Flag File...";
-    $bbcmd cp -f $mntpoint/.dcpartition /data/.dcpartition;
-    $bbcmd rm -f $mntpoint/.dcpartition;
-fi;
-if [ -e $mntpoint/.zipalign ];
-  then
-    echo -e "[ ] Detected old Zipalign flag file.  Moving to /data" >> $a2sdlf;
-    echo -e "[!] Moving Zipalign Flag File...";
-    $bbcmd cp -f $mntpoint/.zipalign /data/.zipalign;
-    $bbcmd rm -f $mntpoint/.zipalign;
-fi;
-if [ -e $mntpoint/.noswap ];
-  then
-    echo -e "[ ] Detected old No Swap flag file.  Moving to /data" >> $a2sdlf;
-    echo -e "[!] Moving No Swap Flag File...";
-    $bbcmd cp -f $mntpoint/.noswap /data/.noswap;
-    $bbcmd rm -f $mntpoint/.noswap;
-fi;
-
-export a2sddcloc=`cd /data/app;$bbcmd pwd;`;
-echo -e "[ ] Applications are stored in $a2sddcloc" >> $a2sdlf;
-echo -e "[ ] Applications are stored ";
-echo -e "    in $a2sddcloc";
-if [ -e /data/app-private ];
-  then
-    export a2sddcloc=`cd /data/app-private;$bbcmd pwd;`;
-    echo -e "[ ] Private Applications are stored in $a2sddcloc" >> $a2sdlf;
-    echo -e "[ ] Private Applications are ";
-    echo -e "    stored in $a2sddcloc";
   else
-    echo -e "[!] No Private Apps directory found.";
-fi;
-export a2sddcloc=`cd /;cd /data/dalvik-cache;$bbcmd pwd;`;
-if [ $a2sdcmnt == 0 ];
-  then
-    echo -e "[ ] Dalvik-Cache is located in $dcpath via mount." | $tee;
-  else
-    if [ $a2sddcloc == "/" ];
+    if [ -h  /data/dalvik-cache ];
       then
-        echo -e "[X] Dalvik-Cache isn't found or is linked to an invalid directory.  Repairing..." | $tee;
-        $bbcmd rm -f /data/dalvik-cache | $tee;
-        $bbcmd mkdir /data/dalvik-cache | $tee;
-        $bbcmd chmod 777 /data/dalvik-cache | $tee;
-      else
-        echo -e "[ ] Dalvik-Cache is located in $a2sddcloc" | $tee;
-    fi;
+        echo -e "[X] Dalvik-cache is symbolically linked." | $tee
+        echo -e "    Dalvik2SD flag file NOT set." | $tee
+        export repair=1
+	fi;
 fi;
 
-# Prevents Apps2SD from continuing when the flag file is set.
+echo "[-] Checkpoint 21: Check for Application alignment." | $tee
 if [ -e /data/.noa2sd ];
   then
-    echo -e "[X] No Apps2SD Start flag detected...Apps2SD will not be started." >> $a2sdlf;
-    echo -e "[X] No Start flag detected.";
-    echo -e "[X] Apps2SD will not start.";
-    $spcmd cm.filesystem.ready 1;
-    $spcmd dc.filesystem.ready 1;
-    echo -e "[ ] cm.filesystem.ready = `$gpcmd cm.filesystem.ready;`" >> $a2sdlf;
-    echo -e "[ ] dc.filesystem.ready = `$gpcmd cm.filesystem.ready;`" >> $a2sdlf;
-    echo -e "[ ] Ending Program: launcha2sd" >> $a2sdlf;
-    exit;
-fi;
-
-# Realignment code for Dalvik-cache.  Will be worked on in 2.7.6.
-export a2sdcmnt=`$bbcmd cat /proc/mounts | $bbcmd grep -q -e /data/dalvik-cache | echo $?`;
-export a2sdmnt=`$bbcmd cat /proc/mounts | $bbcmd grep -q -e $mntpoint | echo $?`;
-if [ ! -h /data/dalvik-cache ];
-  then
-    if [ $a2sdmnt == 0 ];
+    if [ -h /data/app ];
       then
-        if [ $a2sdcmnt == 1 ];
-          then
-            if [ -e /data/.dalvikcache ] ;
-              then
-                echo -e "[X] Dalvik-Cache on Int. Storage but Dalvik to SD flag file set." >> $a2sdlf;
-                echo -e "[X] Dalvik-cache is set to internal storage.";
-                echo -e "    Dalvik Cache flag set.";
-                echo -e "[ ] Realigning Dalvik Cache to SD card" | $tee;
-                if [ ! -d $mntpoint/dalvik-cache ];
-                  then
-                    echo "[ ] Create $mntpoint/dalvik-cache" | $tee;
-                    $bbcmd mkdir $mntpoint/dalvik-cache | $tee;
-                    $bbcmd chmod 777 $mntpoint/dalvik-cache | $tee;
-                fi;
-                $bbcmd rm -rf /data/dalvik-cache | $tee;
-                $bbcmd ln -s $mntpoint/dalvik-cache /data/dalvik-cache | $tee;
-                /system/bin/busybox.a2sd reboot -f;
-            fi;
-        fi;
+        echo -e "[X] Apps are symbolically linked." | $tee
+        echo -e "    NoApps2SD flag file set." | $tee
+        $spcmd a2sd.repair.reboot 1
+        export repair=1
     fi;
-fi;
-                
-# Moves apps to SD card.
-if [ ! -e /data/.noa2asd ];
-  then
-    if [ $a2sdmnt == 0 ];
+  else
+    if [ ! -h /data/app ];
       then
-        if [ ! -h /data/app ];
-          then
-            echo -e "[X] Apps on Int. Storage, ext part detected, No Apps2SD flag file not present." >> $a2sdlf;
-	    echo -e "[X] Applications are set for internal storage.";
-            if [ ! -e $mntpoint/app ];
-              then
-                echo -e "[ ] Creating $mntpoint/app" | $tee;
-                $bbcmd mkdir $mntpoint/app | $tee;
-                $bbcmd chmod 777 $mntpoint/app | $tee;
-            fi;
-            echo -e "[ ] Moving /data/app to $mntpoint/app" | $tee;
-            $bbcmd mv -f /data/app/* $mntpoint/app | $tee;
-            echo -e "[ ] Linking /data/app to $mntpoint/app" | $tee;
-            $bbcmd rm -rf /data/app | $tee;
-            $bbcmd ln -s $mntpoint/app /data/app | $tee;
-        fi;         
-        if [ ! -h /data/app-private ];
-          then
-            echo -e "[X] Private Apps on Int. Storage, ext part detected, No Apps2SD flag file not present." >> $a2sdlf;
-	    echo -e "[X] Private Apps are set for internal storage.";
-            if [ ! -e $mntpoint/app-private ];
-              then
-                echo -e "[ ] Creating $mntpoint/app-private" | $tee;
-                $bbcmd mkdir $mntpoint/app-private | $tee;
-                $bbcmd chmod 777 $mntpoint/app-private | $tee;
-            fi;
-            echo -e "[ ] Moving /data/app-private to $mntpoint/app-private" | $tee;
-            $bbcmd mv -f /data/app-private/* $mntpoint/app-private | $tee;
-            echo -e "[ ] Linking /data/app-private to $mntpoint/app-private" | $tee;
-            $bbcmd rm -rf /data/app-private | $tee;
-            $bbcmd ln -s $mntpoint/app-private /data/app-private | $tee;
-        fi;         
+        echo -e "[X] Apps are NOT symbolically linked."  | $tee
+        echo -e "    NoApps2SD flag file NOT set." | $tee
+        $spcmd a2sd.repair.reboot 1
+        export repair=1
     fi;
 fi;
 
-#echo -e "[ ] Removing ODEX files from $mntpoint/app";
-#$bbcmd rm -r $mntpoint/app/*.odex;
-#echo -e "[ ] Removing ODEX fles from $mntpoint/app-private";
-#$bbcmd rm -r $mntpoint/app-private/*.odex;
+echo "[-] Checkpoint 22: Check for Program Data alignment." | $tee
+if [ -e /data/.datasd ];
+  then
+    if [ ! -h /data/data ];
+      then
+        echo -e "[X] Program Data is NOT symbolically linked." | $tee
+        echo -e "    Data2SD flag file set." | $tee
+        $spcmd a2sd.repair.reboot 1
+        export repair=1
+    fi;
+  else
+    if [ -h /data/data ];
+      then
+        echo -e "[X] Program Data is symbolically linked." | $tee
+        echo -e "    Data2SD flag file NOT set." | $tee
+        $spcmd a2sd.repair.reboot 1
+        export repair=1
+    fi;
+fi; 
 
+echo "[-] Checkpoint 23: Run repair utility (if necessary)" | $tee
+if [ $repair == 1 ];
+  then
+    echo -e "[!] Repair flag has been activated." | $tee
+    echo -e "[ ] Executing repair program." | $tee
+    $a2sdshell /system/bin/starta2sd repair
+fi;
+
+echo "[-] Checkpoing 24: Run check program." | $tee
+echo -e "[ ] Running Apps2SD Check Program..." | $tee
+$a2sdshell /system/bin/chka2sd
+
+echo "[-] Checkpoint 25: Display end of program." | $tee
 # Official end of Apps2SD
-echo -e "[*] Darktremor Apps2SD $a2sdver active." | $tee;
+echo -e "[*] Darktremor Apps2SD $a2sdver complete." | $tee
 
+echo "[-] Checkpoing 26: Run Zipalign." | $tee
 # This runs ZipAlign when the flag file is present.  
 if [ -e /data/.zipalign ];
   then
     echo -e "[ ] ZipAligning programs";
-    echo -e "[ ] ZipAligning Applications" >> $a2sdlf;
+    echo -e "[ ] ZipAligning Applications" >> $a2sdlf
     for apk in /data/app/*.apk; 
       do
-        echo -e "[ ] Checking $apk for zip-alignment." >> $a2sdlf;
-        /system/bin/zipalign -c 4 $apk | $tee;
+        echo -e "[ ] Checking $apk for zip-alignment." >> $a2sdlf
+        /system/bin/zipalign -c 4 $apk | $tee
         if [ $? == 1 ];
           then
-            echo -e "[ ] $apk requires ZipAligning." >> $a2sdlf;
+            echo -e "[ ] $apk requires ZipAligning." >> $a2sdlf
             echo -e "[ ] ZipAligning $apk";
-            /system/bin/zipalign -f 4 $apk /cache/$(basename $apk) | $tee;
+            /system/bin/zipalign -f 4 $apk /cache/$(basename $apk) | $tee
             if [ -e /cache/$(basename $apk) ];
               then
-                $bbcmd cp -fp /cache/$(basename $apk) $apk;
-                $bbcmd rm /cache/$(basename $apk);
-                echo -e "[ ] $apk has been successfully ZipAligned." >> $a2sdlf;
+                $bbcp -fp /cache/$(basename $apk) $apk;
+                $bbrm /cache/$(basename $apk);
+                echo -e "[ ] $apk has been successfully ZipAligned." >> $a2sdlf
                 echo -e "[*] ZipAligning $apk complete.";
               else
-                echo -e "[X] $apk has been unsuccessfully ZipAligned." >> $a2sdlf;
+                echo -e "[X] $apk has been unsuccessfully ZipAligned." >> $a2sdlf
                 echo -e "[X] ZipAligning $apk failed.";
             fi;
         fi;
     done;
-    echo -e "[ ] ZipAligning Private Applications" >> $a2sdlf;
+    echo -e "[ ] ZipAligning Private Applications" >> $a2sdlf
     for apk in /data/app-private/*.apk; 
       do
-        echo -e "[ ] Checking $apk for zip-alignment." >> $a2sdlf;
-        /system/bin/zipalign -c 4 $apk | $tee;
+        echo -e "[ ] Checking $apk for zip-alignment." >> $a2sdlf
+        /system/bin/zipalign -c 4 $apk | $tee
         if [ $? == 1 ];
           then
-            echo -e "[ ] $apk requires ZipAligning." >> $a2sdlf;
+            echo -e "[ ] $apk requires ZipAligning." >> $a2sdlf
             echo -e "[ ] ZipAligning $apk";
-            /system/bin/zipalign -f 4 $apk /cache/$(basename $apk) | $tee;
+            /system/bin/zipalign -f 4 $apk /cache/$(basename $apk) | $tee
             if [ -e /cache/$(basename $apk) ];
               then
-                $bbcmd cp -fp /cache/$(basename $apk) $apk;
-                $bbcmd rm /cache/$(basename $apk);
-                echo -e "[ ] $apk has been successfully ZipAligned." >> $a2sdlf;
+                $bbcp -fp /cache/$(basename $apk) $apk;
+                $bbrm /cache/$(basename $apk);
+                echo -e "[ ] $apk has been successfully ZipAligned." >> $a2sdlf
                 echo -e "[*] ZipAligning $apk complete.";
               else
-                echo -e "[X] $apk has been unsuccessfully ZipAligned." >> $a2sdlf;
+                echo -e "[X] $apk has been unsuccessfully ZipAligned." >> $a2sdlf
                 echo -e "[X] ZipAligning $apk failed.";
             fi;
         fi;
     done;
-    echo -e "[*] ZipAlign complete." | $tee;
+    echo -e "[*] ZipAlign complete." | $tee
   else
-    echo -e "[ ] ZipAlign flag file not detected." >> $a2sdlf;
+    echo -e "[ ] ZipAlign flag file not detected." >> $a2sdlf
     echo -e "[!] ZipAlign flag file not detected.";
     echo -e "    Will not perform ZipAlign";
 fi;
 
+echo "[-] Checkpoint 27: Cleanup." | $tee
 # Cleaning up.
 echo -e "[ ] Setting File System Ready property to 1.";
 $spcmd cm.filesystem.ready 1;
 $spcmd dc.filesystem.ready 1;
-echo -e "[ ] cm.filesystem.ready = `$gpcmd cm.filesystem.ready;`" >> $a2sdlf;
-echo -e "[ ] dc.filesystem.ready = `$gpcmd cm.filesystem.ready;`" >> $a2sdlf;
-echo -e "[ ] Program Ending: launcha2sd" >> $a2sdlf;        
-exit;
+$spcmd oxygen.filesystem.ready 1;
+echo -e "[ ] Program Ending: launcha2sd" >> $a2sdlf
+exit
