@@ -14,16 +14,17 @@ current_ver=$1
 
 echo 
 echo "============================================================"
-echo " Android Kitchen $current_ver - by dsixda (xda-developers.com)"
+echo " Android Kitchen $version - by dsixda (xda-developers.com)"
+echo " Modified By The Team Members Of GreenRomProject"
 echo "============================================================"
 echo
 echo "About the Kitchen"
 echo
 echo "------------------------------------------------------------"
 echo
-echo "  For help and discussion : http://bit.ly/aLKQaR"
-echo "  Follow dsixda on Twitter: http://www.twitter.com/dsixda"
-echo "  For Paypal donations    : http://bit.ly/blHTKy"
+echo "  For help and discussion     : http://greenromproject.com"
+echo "  Follow dsixda on Twitter    : http://www.facebook.com/greenromproject"
+echo "  For Dsixda Paypal donations : http://bit.ly/blHTKy"
 echo
 echo "------------------------------------------------------------"
 echo
@@ -94,13 +95,13 @@ else
       exit 0
     fi
 
-    new_file=dsixda_Android_Kitchen_$latest_ver.zip
+    new_file=grp_Android_Kitchen_$latest_ver.tar
 
     echo
     echo "Downloading $new_file ..."
     echo
 
-    url=https://github.com/dsixda/Android-Kitchen/zipball/$latest_ver
+    url=https://github.com/greenromproject/grp-android-kitchen/zipball/$latest_ver
 
     wget --no-check-certificate $url -O $new_file
     echo

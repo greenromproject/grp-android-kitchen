@@ -29,6 +29,8 @@ do
   echo "The process usually takes several minutes and does NOT require"
   echo "you to sign any of the files afterwards."
   echo
+  echo "WARNING: Please Note that in some case's deodexing"
+  echo "a rom can cause more ram usage upto 10-15% more"
   echo "----------------------------------------------------------------"
   echo
 

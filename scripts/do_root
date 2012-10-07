@@ -84,7 +84,7 @@ then
 
 fi
 
-
+#Added In SuperSU Commands
 echo "Which version of the Superuser package do you want"
 echo "to install?"
 echo
@@ -96,7 +96,7 @@ else
   echo " f - ChainsDD's version          (Android 2.x+)" 
 fi
 
-echo " s - Old and simple version      (All Android)"
+echo " s - Chains SuperSU Version        (Replacement Of SuperUser)"
 echo
 echo " x - Cancel rooting              (default)"
 echo
@@ -123,15 +123,16 @@ fi
 if [ "$overwrite" == "1" ]
 then
   echo
-  echo "Overwriting old 'su' and Superuser.apk ..."
+  echo "Overwriting old 'su bin' and Superuser or SuperSU apk's ..."
   rm -fv $su_path
   rm -fv $super_path
 fi
 
+#Added In SuperSU Folder Commands
 if [ "$enterVersion" == "s" ] 
 then
-  cp -fv ../../tools/su_files/$folder/app/Superuser.apk app
-  cp -fv ../../tools/su_files/$folder/bin/su bin
+  cp -fv ../../tools/su_files/chainssupersu/app/Superuser.apk app
+  cp -fv ../../tools/su_files/chainssupersu/xbin/su bin
 else
   cp -fv ../../tools/su_files/chainsdd/Superuser.apk app
   cp -fv ../../tools/su_files/chainsdd/$folder/su bin

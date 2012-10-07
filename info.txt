@@ -1,0 +1,24 @@
+#Added 26/9/2012 By DeejayCrazy
+
+* added support for endeavoru
+* updated wireless tether to v3.2-beta2
+* updated busybox to v1.20.2
+* updated Superuser to v3.2-RC3
+* updated zipalign to vR20.0.3          
+* updated apps2sd to v2.7.5.3 Beta 04   
+* updated unyaffs to v0.9.4
+
+#Updated 27/09/2012 By DeejayCrazy
+
+*Removed temp files.
+*Added in Edify script for Samsung Galaxy S3 (GT-I9300).
+*Added in Warning For Deodexing a rom which causes extra ram usage.
+*Altered About script.
+*Added Modify to main Menu Screens.
+
+#Updated 2/10/2012
+
+* Removed old superuser and added in SuperSU V0.96 as people prefer over Superuser.
+*Fixed SU entry to accomodate for SuperSU
+*Added About GRP page in Main Menu. Overlays What we do on GreenRomProject.com
+*Updated kitchen to 203

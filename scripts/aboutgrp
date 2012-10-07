@@ -1,0 +1,42 @@
+############################################################################
+#
+# Copyright (c) 2012 - GreenRomProject (http://greenromproject.com)
+#
+# Android Kitchen is 100% free.  This script file is intended for personal
+# and/or educational use only.  It may not be duplicated for monetary
+# benefit or any other purpose without the permission of the developer.
+#
+############################################################################
+
+clear
+
+current_ver=$1
+
+echo 
+echo "============================================================"
+echo " GRP Android Kitchen - by GRP (http://greenromproject.com)"
+echo " Modified By The Team Members Of GreenRomProject"
+echo "============================================================"
+echo
+echo "About the Green Rom Project"
+echo
+echo "========================GREENROMPROJECT============================"
+echo "Green Rom Project was founded as a place were average people can"
+echo "learn about the android system. These include building Rom's and"
+echo "kernel's from source code's using appropriate program's. Themeing"
+echo "roms, making flashable zip's for clockworkmod recovery, We are"
+echo "also dedicated to helping other Moderator's and Developer's to"
+echo "succeed in accomplishing what their intention's are with the."
+echo "android system. We are a great community and we are glad to have"
+echo "you apart of Green Rom Project. This kitchen will always be upto"
+echo "date and we will be adding more feature's in to benefit the user."
+echo "========================GREENROMPROJECT============================"
+
+if [ -e $check_filename ]
+then
+  rm -f $check_filename
+fi
+
+echo
+echo "Press Enter to continue"
+read enterKey

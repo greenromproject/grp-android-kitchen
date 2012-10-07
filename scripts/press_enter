@@ -9,6 +9,6 @@
 ############################################################################
 
 echo
-echo "Press Enter to continue"
+echo "Press Enter To Continue"
 read enterKey  
 

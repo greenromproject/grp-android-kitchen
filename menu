@@ -10,11 +10,8 @@
 #
 ############################################################################
 
-<<<<<<< HEAD
-version=0.201
-=======
-version=0.202
->>>>>>> 59ec8fba48b6b30cd3cc53259a992757dd1e4974
+version=0.203
+
 
 
 if [ ! -e menu ]
@@ -72,6 +69,7 @@ do
   echo 
   echo "============================================================"
   echo " Android Kitchen $version - by dsixda (xda-developers.com)"
+  echo " Modified By The Team Members Of GreenRomProject"
   echo "============================================================"
   echo
   echo "  1 - Set up working folder from ROM"
@@ -88,6 +86,8 @@ do
   echo "  0 - ADVANCED OPTIONS"
   echo " 99 - Build ROM from working folder"
   echo
+
+  echo "  g - About Green Rom Project"
   echo "  u - Update/About kitchen"
   echo "  x - Exit"
   echo
@@ -95,7 +95,7 @@ do
   echo -n "Enter option: "
   read opt
 
-  if [ "$opt" != "x" ] && [ "$opt" != "u" ] && [ "$opt" != "1" ]
+  if [ "$opt" != "x" ] && [ "$opt" != "g" ] && [ "$opt" != "u" ] && [ "$opt" != "1" ]
   then
     scripts/check_multiple_working
   fi
@@ -115,6 +115,7 @@ do
       10) scripts/show_rom_info;;
       0) scripts/menu_advanced $version; continue;;
       99) scripts/build_rom;;
+      g) scripts/aboutgrp;;
       u) scripts/about $version; continue;;
       x) scripts/init_kitchen; clear; echo; echo "Goodbye."; echo; exit 1;;
       *) echo "Invalid option"; continue;;
