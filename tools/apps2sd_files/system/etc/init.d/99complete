@@ -3,4 +3,3 @@
 sync;
 setprop cm.filesystem.ready 1;
 setprop dc.filesystem.ready 1;
-setprop oxygen.filesystem.ready 1;
